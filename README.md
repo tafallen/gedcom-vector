@@ -115,6 +115,22 @@ BOM detection takes priority over the declared tag.
 
 ---
 
+## Performance
+
+The library features a low-allocation line-by-line streaming tokeniser. Below are the BenchmarkDotNet performance metrics for parsing and exporting a sample dataset consisting of 100 individuals (`INDI`) and 50 families (`FAM`):
+
+| Method           | Mean      | Error    | StdDev   | Gen0    | Gen1    | Allocated |
+|----------------- |----------:|---------:|---------:|--------:|--------:|----------:|
+| MeasureParsing   | 126.63 us | 2.074 us | 1.620 us | 65.4297 | 10.7422 | 535.72 KB |
+| MeasureExporting |  32.38 us | 0.630 us | 0.619 us | 21.0571 |  4.1504 | 172.38 KB |
+
+To execute benchmarks locally:
+```bash
+dotnet run -c Release --project tests/Gedcom.Vector.Benchmarks -- --filter *
+```
+
+---
+
 ## Project Structure
 
 ```

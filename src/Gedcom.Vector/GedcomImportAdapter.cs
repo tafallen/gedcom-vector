@@ -17,6 +17,16 @@ public class GedcomImportAdapter : IGedcomImportAdapter
 
     public GedcomParseResult Parse(Stream gedcomFile)
     {
+        if (gedcomFile == null)
+        {
+            throw new ArgumentNullException(nameof(gedcomFile));
+        }
+
+        if (!gedcomFile.CanSeek)
+        {
+            throw new ArgumentException("The provided stream must be seekable. For network or compressed streams, please buffer the content into a MemoryStream first.", nameof(gedcomFile));
+        }
+
         var result = new GedcomParseResult();
 
         if (gedcomFile.Length > _options.MaxFileSizeBytes)
@@ -98,8 +108,7 @@ public class GedcomImportAdapter : IGedcomImportAdapter
             string? rawLine;
             while ((rawLine = reader.ReadLine()) is not null)
             {
-                var bytes = System.Text.Encoding.Latin1.GetBytes(rawLine);
-                yield return AnselDecoder.Decode(bytes);
+                yield return AnselDecoder.Decode(rawLine);
             }
         }
         else

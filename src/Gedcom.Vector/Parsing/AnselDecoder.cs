@@ -60,26 +60,63 @@ internal static class AnselDecoder
         [0xCF] = 'ß', // ess-zed (sharp s)
     };
 
-    public static string Decode(byte[] anselBytes)
+    public static string Decode(string latin1String)
     {
-        var builder = new StringBuilder(anselBytes.Length);
-        var pendingMarks = new List<char>();
+        var builder = new StringBuilder(latin1String.Length);
+        List<char>? pendingMarks = null;
 
-        foreach (var b in anselBytes)
+        foreach (var c in latin1String)
         {
+            var b = (byte)c;
             if (CombiningMarks.TryGetValue(b, out var mark))
             {
+                pendingMarks ??= new List<char>();
                 pendingMarks.Add(mark);
                 continue;
             }
 
             builder.Append(DecodeBaseByte(b));
+            if (pendingMarks != null && pendingMarks.Count > 0)
+            {
+                AppendPendingMarks(builder, pendingMarks);
+            }
+        }
+
+        if (pendingMarks != null && pendingMarks.Count > 0)
+        {
             AppendPendingMarks(builder, pendingMarks);
+        }
+
+        return builder.ToString().Normalize(NormalizationForm.FormC);
+    }
+
+    public static string Decode(byte[] anselBytes)
+    {
+        var builder = new StringBuilder(anselBytes.Length);
+        List<char>? pendingMarks = null;
+
+        foreach (var b in anselBytes)
+        {
+            if (CombiningMarks.TryGetValue(b, out var mark))
+            {
+                pendingMarks ??= new List<char>();
+                pendingMarks.Add(mark);
+                continue;
+            }
+
+            builder.Append(DecodeBaseByte(b));
+            if (pendingMarks != null && pendingMarks.Count > 0)
+            {
+                AppendPendingMarks(builder, pendingMarks);
+            }
         }
 
         // Malformed input: trailing combining marks with no base character to
         // attach to. Append rather than drop, so no information is silently lost.
-        AppendPendingMarks(builder, pendingMarks);
+        if (pendingMarks != null && pendingMarks.Count > 0)
+        {
+            AppendPendingMarks(builder, pendingMarks);
+        }
 
         return builder.ToString().Normalize(NormalizationForm.FormC);
     }

@@ -22,3 +22,6 @@ Thumbs.db
 .idea/
 
 nupkgs/
+
+# BenchmarkDotNet artifacts
+BenchmarkDotNet.Artifacts/

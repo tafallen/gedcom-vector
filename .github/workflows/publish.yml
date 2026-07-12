@@ -37,4 +37,13 @@ jobs:
         run: dotnet pack src/Gedcom.Vector/Gedcom.Vector.csproj --no-build -c Release /p:Version=${{ steps.version.outputs.VERSION }} -o nupkgs/
 
       - name: Push to NuGet (Trusted Publishing)
-        run: dotnet nuget push nupkgs/*.nupkg --source https://api.nuget.org/v3/index.json --skip-duplicate
+        env:
+          ACTIONS_ID_TOKEN_REQUEST_TOKEN: ${{ env.ACTIONS_ID_TOKEN_REQUEST_TOKEN }}
+          ACTIONS_ID_TOKEN_REQUEST_URL: ${{ env.ACTIONS_ID_TOKEN_REQUEST_URL }}
+        run: |
+          OIDC_TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://nuget.org/publish" | jq -r '.value')
+          dotnet nuget push nupkgs/*.nupkg \
+            --api-key "$OIDC_TOKEN" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate

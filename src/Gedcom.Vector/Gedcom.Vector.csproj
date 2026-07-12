@@ -14,7 +14,6 @@
     <Company>tafallen</Company>
     <Product>Gedcom.Vector</Product>
     <Description>A portable .NET 8 GEDCOM 5.5.1 parser, lexer, encoder, and serializer. Supports UTF-8, ANSI, ANSEL, and Unicode encodings. Zero external dependencies beyond Microsoft.Extensions abstractions.</Description>
-    <PackageLicenseExpression>LicenseRef-Gedcom.Vector-NonCommercial</PackageLicenseExpression>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/tafallen/gedcom-vector</PackageProjectUrl>
     <RepositoryUrl>https://github.com/tafallen/gedcom-vector</RepositoryUrl>
@@ -29,8 +28,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\..\LICENSE" Pack="true" PackagePath="LICENSE" />
-    <None Include="..\..\README.md" Pack="true" PackagePath="README.md" />
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="" Link="LICENSE" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="" Link="README.md" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,0 +1,22 @@
+# Build outputs
+bin/
+obj/
+nupkgs/
+TestResults/
+
+# User-specific files
+*.user
+*.suo
+.vs/
+*.userprefs
+
+# NuGet
+*.nupkg
+*.snupkg
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Rider
+.idea/

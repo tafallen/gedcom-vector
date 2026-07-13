@@ -43,18 +43,60 @@ public class GedcomImportAdapter : IGedcomImportAdapter
         var lines = GedcomLexer.Tokenize(ReadLines(gedcomFile, encodingResult));
         var records = GedcomTreeBuilder.Build(lines);
 
+        var xrefCache = new Dictionary<string, string>(StringComparer.Ordinal);
+        string InternXref(string? x)
+        {
+            if (x is null) return null!;
+            if (xrefCache.TryGetValue(x, out var existing)) return existing;
+            xrefCache[x] = x;
+            return x;
+        }
+
         foreach (var record in records)
         {
             if (record.Tag == "INDI" && record.XrefId is not null)
             {
-                result.Persons.Add(PersonMapper.MapPerson(record));
-                result.Events.AddRange(EventMapper.MapEvents(record, _logger));
-                ExtractMediaLinks(record, mediaLinks);
+                var person = PersonMapper.MapPerson(record);
+                var internedXref = InternXref(person.XrefId);
+                var internedPerson = person with { XrefId = internedXref };
+                result.Persons.Add(internedPerson);
+
+                int startEventCount = result.Events.Count;
+                EventMapper.MapEvents(record, result.Events, _logger);
+                for (int i = startEventCount; i < result.Events.Count; i++)
+                {
+                    result.Events[i] = result.Events[i] with { PersonXrefId = internedXref };
+                }
+
+                ExtractMediaLinks(record, mediaLinks, xrefCache);
             }
             else if (record.Tag == "FAM" && record.XrefId is not null)
             {
-                result.Families.Add(FamilyMapper.MapFamily(record));
-                ExtractMediaLinks(record, mediaLinks);
+                var family = FamilyMapper.MapFamily(record);
+                var internedXref = InternXref(family.XrefId);
+                
+                var husbandXref = family.HusbandXref is not null ? InternXref(family.HusbandXref) : null;
+                var wifeXref = family.WifeXref is not null ? InternXref(family.WifeXref) : null;
+                var children = family.ChildXrefs;
+                if (children.Count > 0)
+                {
+                    var internedChildren = new string[children.Count];
+                    for (int i = 0; i < children.Count; i++)
+                    {
+                        internedChildren[i] = InternXref(children[i]);
+                    }
+                    children = internedChildren;
+                }
+
+                var internedFamily = family with { 
+                    XrefId = internedXref, 
+                    HusbandXref = husbandXref, 
+                    WifeXref = wifeXref, 
+                    ChildXrefs = children 
+                };
+                result.Families.Add(internedFamily);
+
+                ExtractMediaLinks(record, mediaLinks, xrefCache);
             }
             else if (record.Tag == "OBJE" && record.XrefId is not null)
             {
@@ -70,8 +112,27 @@ public class GedcomImportAdapter : IGedcomImportAdapter
 
         foreach (var media in mediaNodes)
         {
-            mediaLinks.TryGetValue(media.XrefId!, out var linkedXrefs);
-            result.Media.Add(MediaMapper.MapMedia(media, linkedXrefs ?? (IReadOnlyList<string>)Array.Empty<string>()));
+            var mediaXref = InternXref(media.XrefId);
+            mediaLinks.TryGetValue(mediaXref, out var linkedXrefs);
+            
+            IReadOnlyList<string> internedLinks;
+            if (linkedXrefs != null && linkedXrefs.Count > 0)
+            {
+                var arr = new string[linkedXrefs.Count];
+                for (int i = 0; i < linkedXrefs.Count; i++)
+                {
+                    arr[i] = InternXref(linkedXrefs[i]);
+                }
+                internedLinks = arr;
+            }
+            else
+            {
+                internedLinks = Array.Empty<string>();
+            }
+
+            var mappedMedia = MediaMapper.MapMedia(media, internedLinks);
+            var internedMedia = mappedMedia with { XrefId = mediaXref };
+            result.Media.Add(internedMedia);
         }
 
         _logger.LogInformation(
@@ -81,18 +142,31 @@ public class GedcomImportAdapter : IGedcomImportAdapter
         return result;
     }
 
-    private static void ExtractMediaLinks(Parsing.GedcomNode entity, Dictionary<string, List<string>> mediaLinks)
+    private static void ExtractMediaLinks(
+        Parsing.GedcomNode entity, 
+        Dictionary<string, List<string>> mediaLinks,
+        Dictionary<string, string> xrefCache)
     {
-        foreach (var obje in entity.ChildrenWithTag("OBJE"))
+        string Intern(string x)
         {
-            if (obje.Value is not null)
+            if (xrefCache.TryGetValue(x, out var existing)) return existing;
+            xrefCache[x] = x;
+            return x;
+        }
+
+        var children = entity.Children;
+        for (int i = 0; i < children.Count; i++)
+        {
+            var child = children[i];
+            if (child.Tag == "OBJE" && child.Value is not null)
             {
-                if (!mediaLinks.TryGetValue(obje.Value, out var list))
+                var val = Intern(child.Value);
+                if (!mediaLinks.TryGetValue(val, out var list))
                 {
                     list = new List<string>();
-                    mediaLinks[obje.Value] = list;
+                    mediaLinks[val] = list;
                 }
-                list.Add(entity.XrefId!);
+                list.Add(Intern(entity.XrefId!));
             }
         }
     }
@@ -101,9 +175,6 @@ public class GedcomImportAdapter : IGedcomImportAdapter
     {
         if (encodingResult.IsAnsel)
         {
-            // Latin1 preserves exactly 1 byte per char without any decoding assumptions,
-            // allowing us to read lines while retaining the exact original byte sequence
-            // for the ANSEL decoder.
             using var reader = new StreamReader(stream, System.Text.Encoding.Latin1, detectEncodingFromByteOrderMarks: false, bufferSize: -1, leaveOpen: true);
             string? rawLine;
             while ((rawLine = reader.ReadLine()) is not null)

@@ -129,7 +129,7 @@ public static class GedcomLexer
             {
                 return false;
             }
-            tag = tagSpan.ToString();
+            tag = GetInternedTag(tagSpan);
         }
         else
         {
@@ -138,11 +138,55 @@ public static class GedcomLexer
             {
                 return false;
             }
-            tag = tagSpan.ToString();
+            tag = GetInternedTag(tagSpan);
             value = rest.Slice(space2 + 1).ToString();
         }
 
         return true;
+    }
+
+    private static string GetInternedTag(ReadOnlySpan<char> tagSpan)
+    {
+        switch (tagSpan.Length)
+        {
+            case 3:
+                if (tagSpan.SequenceEqual("SEX")) return "SEX";
+                if (tagSpan.SequenceEqual("FAM")) return "FAM";
+                if (tagSpan.SequenceEqual("BAP")) return "BAP";
+                if (tagSpan.SequenceEqual("CHR")) return "CHR";
+                break;
+            case 4:
+                if (tagSpan.SequenceEqual("INDI")) return "INDI";
+                if (tagSpan.SequenceEqual("NAME")) return "NAME";
+                if (tagSpan.SequenceEqual("GIVN")) return "GIVN";
+                if (tagSpan.SequenceEqual("SURN")) return "SURN";
+                if (tagSpan.SequenceEqual("BIRT")) return "BIRT";
+                if (tagSpan.SequenceEqual("DATE")) return "DATE";
+                if (tagSpan.SequenceEqual("PLAC")) return "PLAC";
+                if (tagSpan.SequenceEqual("FAMS")) return "FAMS";
+                if (tagSpan.SequenceEqual("FAMC")) return "FAMC";
+                if (tagSpan.SequenceEqual("HUSB")) return "HUSB";
+                if (tagSpan.SequenceEqual("WIFE")) return "WIFE";
+                if (tagSpan.SequenceEqual("MARR")) return "MARR";
+                if (tagSpan.SequenceEqual("CHIL")) return "CHIL";
+                if (tagSpan.SequenceEqual("OBJE")) return "OBJE";
+                if (tagSpan.SequenceEqual("TITL")) return "TITL";
+                if (tagSpan.SequenceEqual("FILE")) return "FILE";
+                if (tagSpan.SequenceEqual("FORM")) return "FORM";
+                if (tagSpan.SequenceEqual("HEAD")) return "HEAD";
+                if (tagSpan.SequenceEqual("GEDC")) return "GEDC";
+                if (tagSpan.SequenceEqual("VERS")) return "VERS";
+                if (tagSpan.SequenceEqual("CHAR")) return "CHAR";
+                if (tagSpan.SequenceEqual("TRLR")) return "TRLR";
+                if (tagSpan.SequenceEqual("DEAT")) return "DEAT";
+                if (tagSpan.SequenceEqual("BURI")) return "BURI";
+                if (tagSpan.SequenceEqual("CENS")) return "CENS";
+                if (tagSpan.SequenceEqual("NOTE")) return "NOTE";
+                if (tagSpan.SequenceEqual("CONC")) return "CONC";
+                if (tagSpan.SequenceEqual("CONT")) return "CONT";
+                break;
+        }
+        return tagSpan.ToString();
     }
 
     private static bool IsValidTag(ReadOnlySpan<char> tag)

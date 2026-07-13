@@ -23,10 +23,12 @@ internal static class EventMapper
         "CAST", "DSCR", "EDUC", "IDNO", "NATI", "NCHI", "NMR", "OCCU", "PROP", "RELI", "SSN", "FACT",
     };
 
-    public static IEnumerable<EventRecord> MapEvents(Parsing.GedcomNode individual, ILogger logger)
+    public static void MapEvents(Parsing.GedcomNode individual, List<EventRecord> destination, ILogger logger)
     {
-        foreach (var child in individual.Children)
+        var children = individual.Children;
+        for (int i = 0; i < children.Count; i++)
         {
+            var child = children[i];
             if (!EventLikeTags.Contains(child.Tag))
             {
                 continue;
@@ -41,7 +43,7 @@ internal static class EventMapper
                 continue;
             }
 
-            yield return new EventRecord(individual.XrefId!, eventType, child.Child("DATE")?.Value, child.Child("PLAC")?.Value);
+            destination.Add(new EventRecord(individual.XrefId!, eventType, child.Child("DATE")?.Value, child.Child("PLAC")?.Value));
         }
     }
 }

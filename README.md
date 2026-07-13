@@ -121,8 +121,8 @@ The library features a low-allocation line-by-line streaming tokeniser. Below ar
 
 | Method           | Mean      | Error    | StdDev   | Gen0    | Gen1    | Allocated |
 |----------------- |----------:|---------:|---------:|--------:|--------:|----------:|
-| MeasureParsing   | 126.63 us | 2.074 us | 1.620 us | 65.4297 | 10.7422 | 535.72 KB |
-| MeasureExporting |  32.38 us | 0.630 us | 0.619 us | 21.0571 |  4.1504 | 172.38 KB |
+| MeasureParsing   |  95.53 us | 1.707 us | 4.345 us | 41.9922 |  7.8125 | 343.92 KB |
+| MeasureExporting |  21.85 us | 1.459 us | 4.211 us | 14.6790 |  3.6316 | 120.13 KB |
 
 To execute benchmarks locally:
 ```bash

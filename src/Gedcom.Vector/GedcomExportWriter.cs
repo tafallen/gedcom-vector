@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace Gedcom.Vector;
 
+/// <inheritdoc />
 public class GedcomExportWriter : IGedcomExportWriter
 {
     private static readonly Dictionary<FamTreeEventType, string> TagByEventType = new()
@@ -21,6 +22,7 @@ public class GedcomExportWriter : IGedcomExportWriter
         [FamTreeEventType.Burial] = "BURI",
     };
 
+    /// <inheritdoc />
     public string Write(GedcomParseResult parseResult)
     {
         if (parseResult == null) throw new ArgumentNullException(nameof(parseResult));
@@ -33,6 +35,7 @@ public class GedcomExportWriter : IGedcomExportWriter
         return sb.ToString();
     }
 
+    /// <inheritdoc />
     public void Write(GedcomParseResult parseResult, Stream output)
     {
         if (parseResult == null) throw new ArgumentNullException(nameof(parseResult));
@@ -42,6 +45,7 @@ public class GedcomExportWriter : IGedcomExportWriter
         WriteInternal(writer, parseResult);
     }
 
+    /// <inheritdoc />
     public async Task WriteAsync(GedcomParseResult parseResult, Stream output, CancellationToken cancellationToken = default)
     {
         if (parseResult == null) throw new ArgumentNullException(nameof(parseResult));

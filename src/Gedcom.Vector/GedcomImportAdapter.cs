@@ -4,17 +4,24 @@ using Microsoft.Extensions.Options;
 
 namespace Gedcom.Vector;
 
+/// <inheritdoc />
 public class GedcomImportAdapter : IGedcomImportAdapter
 {
     private readonly ILogger<GedcomImportAdapter> _logger;
     private readonly GedcomImportOptions _options;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="GedcomImportAdapter"/> class.
+    /// </summary>
+    /// <param name="logger">The logger instance.</param>
+    /// <param name="options">The configuration options.</param>
     public GedcomImportAdapter(ILogger<GedcomImportAdapter> logger, IOptions<GedcomImportOptions> options)
     {
         _logger = logger;
         _options = options.Value;
     }
 
+    /// <inheritdoc />
     public GedcomParseResult Parse(Stream gedcomFile)
     {
         if (gedcomFile == null)

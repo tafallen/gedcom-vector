@@ -2,8 +2,17 @@ using System.Text;
 
 namespace Gedcom.Vector.Parsing;
 
+/// <summary>
+/// Provides methods for lexing and tokenizing raw GEDCOM lines.
+/// </summary>
 public static class GedcomLexer
 {
+    /// <summary>
+    /// Tokenizes a sequence of raw text lines into structured <see cref="GedcomLine"/> records,
+    /// resolving line levels, cross-references, tags, and multi-line value continuations (CONC/CONT).
+    /// </summary>
+    /// <param name="gedcomLines">The sequence of raw lines from the GEDCOM input.</param>
+    /// <returns>An enumerable sequence of parsed <see cref="GedcomLine"/> objects.</returns>
     public static IEnumerable<GedcomLine> Tokenize(IEnumerable<string> gedcomLines)
     {
         int currentLevel = 0;

@@ -81,12 +81,80 @@ public class ExportService(IGedcomExportWriter writer)
 ### Without DI (direct use)
 
 ```csharp
-using var stream = File.OpenRead("family.ged");
+using var inputStream = File.OpenRead("family.ged");
 var adapter = new GedcomImportAdapter(
     NullLogger<GedcomImportAdapter>.Instance,
     Options.Create(new GedcomImportOptions { MaxFileSizeBytes = 10_000_000 })
 );
-var result = adapter.Parse(stream);
+GedcomParseResult result = adapter.Parse(inputStream);
+
+// Direct export to file
+using var outputStream = File.Create("output.ged");
+var writer = new GedcomExportWriter();
+writer.Write(result, outputStream);
+```
+
+---
+
+## Detailed API & Records Reference
+
+### Inspecting Parsed Individuals (`PersonRecord`)
+```csharp
+foreach (var person in result.Persons)
+{
+    Console.WriteLine($"ID: {person.XrefId}");
+    Console.WriteLine($"Name: {person.FirstName} {person.LastName}");
+    Console.WriteLine($"Sex: {person.Sex}"); // PersonSex.Male / PersonSex.Female / PersonSex.Unknown
+    
+    if (person.BirthDate is not null)
+        Console.WriteLine($"Born: {person.BirthDate} at {person.BirthPlace}");
+    if (person.DeathDate is not null)
+        Console.WriteLine($"Died: {person.DeathDate} at {person.DeathPlace}");
+}
+```
+
+### Inspecting Family Structures (`FamilyRecord`)
+```csharp
+foreach (var family in result.Families)
+{
+    Console.WriteLine($"Family: {family.XrefId}");
+    Console.WriteLine($"Spouses: {family.HusbandXref} and {family.WifeXref}");
+    Console.WriteLine($"Children IDs: {string.Join(", ", family.ChildXrefs)}");
+    
+    if (family.MarriageDate is not null)
+        Console.WriteLine($"Marriage: {family.MarriageDate} in {family.MarriagePlace}");
+}
+```
+
+### Inspecting Linked Events (`EventRecord`)
+Events are separated from individuals for cleaner data structures, mapped via `PersonXrefId`:
+```csharp
+foreach (var ev in result.Events)
+{
+    Console.WriteLine($"Person: {ev.PersonXrefId}");
+    Console.WriteLine($"Event: {ev.EventType} (Date: {ev.Date}, Place: {ev.Place})");
+}
+```
+
+### Handling Media References (`MediaReferenceRecord`)
+```csharp
+foreach (var media in result.Media)
+{
+    Console.WriteLine($"Title: {media.Title}");
+    Console.WriteLine($"File: {media.FilePath} (MIME: {media.MimeType})");
+    Console.WriteLine($"Linked Entities: {string.Join(", ", media.LinkedXrefIds)}");
+}
+```
+
+### Error and Validation Checking
+Check for parsing validation errors or format issues:
+```csharp
+if (result.Errors.Count > 0)
+{
+    Console.WriteLine("Import completed with errors/warnings:");
+    foreach (var error in result.Errors)
+        Console.WriteLine($"- {error}");
+}
 ```
 
 ---

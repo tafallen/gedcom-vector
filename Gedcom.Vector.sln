@@ -13,6 +13,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gedcom.Vector.Tests", "test
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gedcom.Vector.Benchmarks", "tests\Gedcom.Vector.Benchmarks\Gedcom.Vector.Benchmarks.csproj", "{4AF70D20-815D-4BEF-86D9-AA870BE3A4B2}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{085E0C83-33EB-4732-8E75-F015D4A6E119}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gedcom.Vector.Sample", "samples\Gedcom.Vector.Sample\Gedcom.Vector.Sample.csproj", "{326F7BF3-40CC-464A-BBCB-29728C2D6C9E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -34,10 +38,15 @@ Global
 		{4AF70D20-815D-4BEF-86D9-AA870BE3A4B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4AF70D20-815D-4BEF-86D9-AA870BE3A4B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4AF70D20-815D-4BEF-86D9-AA870BE3A4B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{326F7BF3-40CC-464A-BBCB-29728C2D6C9E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{326F7BF3-40CC-464A-BBCB-29728C2D6C9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{326F7BF3-40CC-464A-BBCB-29728C2D6C9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{326F7BF3-40CC-464A-BBCB-29728C2D6C9E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{FA706D0D-DE9C-4D26-B027-B3198F7F1FE4} = {5D719F31-DE68-4530-826D-A4C5D6DBF6BD}
 		{4AE73C06-213D-4403-A602-212538CF8889} = {FF8F3E09-611E-4DC0-AF56-BEB84A272053}
 		{4AF70D20-815D-4BEF-86D9-AA870BE3A4B2} = {FF8F3E09-611E-4DC0-AF56-BEB84A272053}
+		{326F7BF3-40CC-464A-BBCB-29728C2D6C9E} = {085E0C83-33EB-4732-8E75-F015D4A6E119}
 	EndGlobalSection
 EndGlobal

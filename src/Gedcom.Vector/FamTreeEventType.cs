@@ -44,4 +44,9 @@ public enum FamTreeEventType
     /// Burial event (BURI).
     /// </summary>
     Burial,
+
+    /// <summary>
+    /// Baptism event (BAPM).
+    /// </summary>
+    Baptism,
 }

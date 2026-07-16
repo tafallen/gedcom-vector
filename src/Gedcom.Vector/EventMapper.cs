@@ -14,6 +14,7 @@ internal static class EventMapper
         ["RESI"] = FamTreeEventType.Residence,
         ["CHR"] = FamTreeEventType.Christening,
         ["BURI"] = FamTreeEventType.Burial,
+        ["BAPM"] = FamTreeEventType.Baptism,
     };
 
     private static readonly HashSet<string> EventLikeTags = new(SupportedEventTypes.Keys)

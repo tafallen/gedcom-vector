@@ -30,8 +30,8 @@ public class ParserBenchmarks
         sb.AppendLine("2 FORM LINEAGE-LINKED");
         sb.AppendLine("1 CHAR UTF-8");
 
-        // Generate 100 individuals
-        for (int i = 1; i <= 100; i++)
+        // Generate 4000 individuals
+        for (int i = 1; i <= 4000; i++)
         {
             sb.AppendLine($"0 @I{i}@ INDI");
             sb.AppendLine($"1 NAME John{i} /Doe/");
@@ -41,15 +41,26 @@ public class ParserBenchmarks
             sb.AppendLine("1 BIRT");
             sb.AppendLine("2 DATE 1 JAN 1900");
             sb.AppendLine("2 PLAC New York, USA");
-            sb.AppendLine($"1 FAMS @F{i}@");
+            
+            // Individuals 1 to 2000 are spouses in families 1 to 1000
+            if (i <= 2000)
+            {
+                sb.AppendLine($"1 FAMS @F{(i + 1) / 2}@");
+            }
+            // Individuals 2001 to 4000 are children in families 1 to 2000
+            else
+            {
+                sb.AppendLine($"1 FAMC @F{i - 2000}@");
+            }
         }
 
-        // Generate 50 families
-        for (int i = 1; i <= 50; i++)
+        // Generate 2000 families
+        for (int i = 1; i <= 2000; i++)
         {
             sb.AppendLine($"0 @F{i}@ FAM");
             sb.AppendLine($"1 HUSB @I{i * 2 - 1}@");
             sb.AppendLine($"1 WIFE @I{i * 2}@");
+            sb.AppendLine($"1 CHIL @I{i + 2000}@");
             sb.AppendLine("1 MARR");
             sb.AppendLine("2 DATE 1 JUN 1925");
         }

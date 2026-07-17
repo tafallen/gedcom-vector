@@ -1,14 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Gedcom.Vector;
 
 /// <summary>
 /// A query-optimized context that builds index tables on a <see cref="GedcomParseResult"/>
-/// for O(1) family tree relationship traversal.
+/// for O(1) family tree relationship traversal, supporting incremental mutable updates.
 /// </summary>
 public class GedcomTreeContext
 {
+    private readonly GedcomParseResult _backingResult;
     private readonly Dictionary<string, PersonRecord> _personsById;
     private readonly Dictionary<string, FamilyRecord> _familiesById;
     private readonly Dictionary<string, List<FamilyRecord>> _familiesAsSpouse;
@@ -21,7 +23,7 @@ public class GedcomTreeContext
     /// </summary>
     public GedcomTreeContext(GedcomParseResult result)
     {
-        if (result == null) throw new ArgumentNullException(nameof(result));
+        _backingResult = result ?? throw new ArgumentNullException(nameof(result));
 
         // 1. Index persons
         var persons = result.Persons;
@@ -194,5 +196,278 @@ public class GedcomTreeContext
     {
         if (entityXref == null) throw new ArgumentNullException(nameof(entityXref));
         return _mediaByEntityId.TryGetValue(entityXref, out var list) ? list : Array.Empty<MediaReferenceRecord>();
+    }
+
+    /// <summary>
+    /// Adds a new person to both the index dictionaries and the backing parsed result.
+    /// </summary>
+    /// <param name="person">The person record to add.</param>
+    public void AddPerson(PersonRecord person)
+    {
+        if (person == null) throw new ArgumentNullException(nameof(person));
+        if (_personsById.ContainsKey(person.XrefId))
+        {
+            throw new ArgumentException($"Person with ID '{person.XrefId}' already exists.", nameof(person));
+        }
+
+        _personsById[person.XrefId] = person;
+        _backingResult.Persons.Add(person);
+    }
+
+    /// <summary>
+    /// Updates an existing person's details in the index dictionaries and the backing parsed result.
+    /// </summary>
+    /// <param name="person">The updated person record.</param>
+    public void UpdatePerson(PersonRecord person)
+    {
+        if (person == null) throw new ArgumentNullException(nameof(person));
+        if (!_personsById.TryGetValue(person.XrefId, out var existing))
+        {
+            throw new KeyNotFoundException($"Person with ID '{person.XrefId}' not found.");
+        }
+
+        // 1. Replace in dictionary
+        _personsById[person.XrefId] = person;
+
+        // 2. Replace in backing list
+        int idx = _backingResult.Persons.IndexOf(existing);
+        if (idx >= 0)
+        {
+            _backingResult.Persons[idx] = person;
+        }
+
+        // 3. Update in children lookup reference lists
+        if (_familiesAsChild.TryGetValue(person.XrefId, out var childFam))
+        {
+            if (_childrenByFamilyId.TryGetValue(childFam.XrefId, out var childrenList))
+            {
+                for (int i = 0; i < childrenList.Count; i++)
+                {
+                    if (childrenList[i].XrefId == person.XrefId)
+                    {
+                        childrenList[i] = person;
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Removes a person from the index dictionaries and the backing result, unlinking them from relations.
+    /// </summary>
+    /// <param name="xref">The ID of the person to delete.</param>
+    public void DeletePerson(string xref)
+    {
+        if (xref == null) throw new ArgumentNullException(nameof(xref));
+        if (!_personsById.TryGetValue(xref, out var person)) return;
+
+        // 1. Remove from primary index and backing list
+        _personsById.Remove(xref);
+        _backingResult.Persons.Remove(person);
+
+        // 2. Unlink from families where this person is a child
+        if (_familiesAsChild.TryGetValue(xref, out var childFam))
+        {
+            if (_childrenByFamilyId.TryGetValue(childFam.XrefId, out var children))
+            {
+                children.RemoveAll(c => c.XrefId == xref);
+            }
+            _familiesAsChild.Remove(xref);
+
+            var updatedChildren = childFam.ChildXrefs.Where(id => id != xref).ToList();
+            var updatedFam = childFam with { ChildXrefs = updatedChildren };
+            ReplaceFamilyInBacking(childFam, updatedFam);
+        }
+
+        // 3. Unlink from families where this person is a spouse
+        if (_familiesAsSpouse.TryGetValue(xref, out var spouseFamilies))
+        {
+            for (int i = 0; i < spouseFamilies.Count; i++)
+            {
+                var fam = spouseFamilies[i];
+                if (fam.HusbandXref == xref)
+                {
+                    var updated = fam with { HusbandXref = null };
+                    ReplaceFamilyInBacking(fam, updated);
+                }
+                else if (fam.WifeXref == xref)
+                {
+                    var updated = fam with { WifeXref = null };
+                    ReplaceFamilyInBacking(fam, updated);
+                }
+            }
+            _familiesAsSpouse.Remove(xref);
+        }
+
+        // 4. Clean up media references
+        _mediaByEntityId.Remove(xref);
+        for (int i = 0; i < _backingResult.Media.Count; i++)
+        {
+            var med = _backingResult.Media[i];
+            if (med.LinkedXrefIds.Contains(xref))
+            {
+                var updatedLinked = med.LinkedXrefIds.Where(id => id != xref).ToList();
+                var updatedMed = med with { LinkedXrefIds = updatedLinked };
+                _backingResult.Media[i] = updatedMed;
+
+                foreach (var entityId in updatedLinked)
+                {
+                    if (_mediaByEntityId.TryGetValue(entityId, out var mediaList))
+                    {
+                        for (int j = 0; j < mediaList.Count; j++)
+                        {
+                            if (mediaList[j].XrefId == med.XrefId)
+                            {
+                                mediaList[j] = updatedMed;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Adds a new family to both the index dictionaries and the backing parsed result.
+    /// </summary>
+    /// <param name="family">The family record to add.</param>
+    public void AddFamily(FamilyRecord family)
+    {
+        if (family == null) throw new ArgumentNullException(nameof(family));
+        if (_familiesById.ContainsKey(family.XrefId))
+        {
+            throw new ArgumentException($"Family with ID '{family.XrefId}' already exists.", nameof(family));
+        }
+
+        _familiesById[family.XrefId] = family;
+        _backingResult.Families.Add(family);
+
+        // Map spouse lookups
+        if (family.HusbandXref is not null)
+        {
+            if (!_familiesAsSpouse.TryGetValue(family.HusbandXref, out var list))
+            {
+                list = new List<FamilyRecord>();
+                _familiesAsSpouse[family.HusbandXref] = list;
+            }
+            list.Add(family);
+        }
+
+        if (family.WifeXref is not null)
+        {
+            if (!_familiesAsSpouse.TryGetValue(family.WifeXref, out var list))
+            {
+                list = new List<FamilyRecord>();
+                _familiesAsSpouse[family.WifeXref] = list;
+            }
+            list.Add(family);
+        }
+
+        // Map children lookups
+        var childrenList = new List<PersonRecord>(family.ChildXrefs.Count);
+        for (int i = 0; i < family.ChildXrefs.Count; i++)
+        {
+            var childXref = family.ChildXrefs[i];
+            if (childXref is not null)
+            {
+                _familiesAsChild[childXref] = family;
+                if (_personsById.TryGetValue(childXref, out var child))
+                {
+                    childrenList.Add(child);
+                }
+            }
+        }
+        _childrenByFamilyId[family.XrefId] = childrenList;
+    }
+
+    /// <summary>
+    /// Removes a family from the index dictionaries and the backing result, unlinking all relations.
+    /// </summary>
+    /// <param name="xref">The ID of the family to delete.</param>
+    public void DeleteFamily(string xref)
+    {
+        if (xref == null) throw new ArgumentNullException(nameof(xref));
+        if (!_familiesById.TryGetValue(xref, out var family)) return;
+
+        _familiesById.Remove(xref);
+        _backingResult.Families.Remove(family);
+
+        // Remove from spouse lookups
+        if (family.HusbandXref is not null && _familiesAsSpouse.TryGetValue(family.HusbandXref, out var husbList))
+        {
+            husbList.Remove(family);
+        }
+        if (family.WifeXref is not null && _familiesAsSpouse.TryGetValue(family.WifeXref, out var wifeList))
+        {
+            wifeList.Remove(family);
+        }
+
+        // Remove children parent maps
+        for (int i = 0; i < family.ChildXrefs.Count; i++)
+        {
+            var childXref = family.ChildXrefs[i];
+            if (childXref is not null)
+            {
+                _familiesAsChild.Remove(childXref);
+            }
+        }
+        _childrenByFamilyId.Remove(xref);
+
+        // Clean up media references
+        _mediaByEntityId.Remove(xref);
+        for (int i = 0; i < _backingResult.Media.Count; i++)
+        {
+            var med = _backingResult.Media[i];
+            if (med.LinkedXrefIds.Contains(xref))
+            {
+                var updatedLinked = med.LinkedXrefIds.Where(id => id != xref).ToList();
+                var updatedMed = med with { LinkedXrefIds = updatedLinked };
+                _backingResult.Media[i] = updatedMed;
+
+                foreach (var entityId in updatedLinked)
+                {
+                    if (_mediaByEntityId.TryGetValue(entityId, out var mediaList))
+                    {
+                        for (int j = 0; j < mediaList.Count; j++)
+                        {
+                            if (mediaList[j].XrefId == med.XrefId)
+                            {
+                                mediaList[j] = updatedMed;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void ReplaceFamilyInBacking(FamilyRecord oldFam, FamilyRecord newFam)
+    {
+        int idx = _backingResult.Families.IndexOf(oldFam);
+        if (idx >= 0)
+        {
+            _backingResult.Families[idx] = newFam;
+        }
+        _familiesById[oldFam.XrefId] = newFam;
+
+        if (oldFam.HusbandXref is not null && _familiesAsSpouse.TryGetValue(oldFam.HusbandXref, out var husbList))
+        {
+            int hIdx = husbList.IndexOf(oldFam);
+            if (hIdx >= 0) husbList[hIdx] = newFam;
+        }
+        if (oldFam.WifeXref is not null && _familiesAsSpouse.TryGetValue(oldFam.WifeXref, out var wifeList))
+        {
+            int wIdx = wifeList.IndexOf(oldFam);
+            if (wIdx >= 0) wifeList[wIdx] = newFam;
+        }
+
+        for (int i = 0; i < oldFam.ChildXrefs.Count; i++)
+        {
+            var childXref = oldFam.ChildXrefs[i];
+            if (childXref is not null)
+            {
+                _familiesAsChild[childXref] = newFam;
+            }
+        }
     }
 }

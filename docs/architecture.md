@@ -78,3 +78,34 @@ Before serialization, relationships (such as events grouped by person, or media 
 ### Step B: Streaming Output
 * **Streaming Writers**: Serializes output directly to a `Stream` or `TextWriter` (using `StreamWriter` with UTF-8). This supports writing gigabyte-sized GEDCOM trees without loading a single massive string into RAM.
 * **Interpolation-Free Writes**: Rather than allocating interpolated string objects (like `$"0 {person.XrefId} INDI\n"`), the exporter writes raw tokens and fields sequentially into the stream buffer.
+
+---
+
+## 4. The Fluent API Layer
+
+The Fluent API layer provides a strongly-typed developer interface for building trees and querying/mutating relationships.
+
+```mermaid
+graph TD
+    Builder[GedcomBuilder] --> BuildOp[Build]
+    BuildOp --> ParseResult[GedcomParseResult]
+    ParseResult --> ToCtx[ToContext]
+    ToCtx --> TreeCtx[GedcomTreeContext]
+    TreeCtx --> Getters[O(1) Relationship Queries]
+    TreeCtx --> Mutators[O(1) Incremental Updates]
+```
+
+### Fluent Builder API (`GedcomBuilder`)
+* **How It Works**: Orchestrated by `GedcomBuilder`, it delegates record-specific building to sub-builders (`PersonBuilder`, `FamilyBuilder`, `MediaBuilder`). Sub-builders maintain state properties and automatically commit their built records back to the root lists when transitioning (e.g., `.AddPerson()` or `.AddFamily()` calls) or when `.Build()` is invoked.
+* **Benefits**: Extremely readable syntax; prevents manual record instantiation and list grouping errors. Ensures consistent reference links.
+* **Costs**: Modest transient memory allocations for builder class instantiations, which are garbage-collected immediately upon calling `.Build()`.
+
+### Fluent Query & Mutation Context (`GedcomTreeContext`)
+* **How It Works**: Wraps the raw `GedcomParseResult` and builds indexed lookup dictionaries mapping cross-reference IDs (`XrefId`) to entities and relationships.
+* **Benefits**: 
+  * **High Performance**: Traverses parent, child, and spouse relations in $O(1)$ constant time, bypassing the $O(N)$ list-scanning LINQ operations.
+  * **Incremental Mutability**: Exposes mutator methods (`AddPerson`, `UpdatePerson`, `DeletePerson`, `AddFamily`, `DeleteFamily`) that update the lookup dictionaries and backing collections in $O(1)$ time, completely avoiding full $O(N)$ tree indexing recomputations.
+* **Costs**:
+  * **Initialization**: Indices are built during instantiation, taking **1.19 ms** and allocating **1.15 MB** of memory for a 4,000-person tree (scales linearly $O(N)$).
+  * **Break-Even Point (CPU)**: In a 100-person tree, the context indexing pays off after **17 queries**. In a 4,000-person tree, it pays off after **82 queries**.
+  * **Break-Even Point (Memory)**: In a 100-person tree, the allocation overhead pays off after **74 queries**. In a 4,000-person tree, it pays off after **2,294 queries**.

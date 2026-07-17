@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text;
 using BenchmarkDotNet.Attributes;
 using Gedcom.Vector;
@@ -13,6 +16,8 @@ public class ParserBenchmarks
     private GedcomImportAdapter _importAdapter = null!;
     private GedcomParseResult _parsedResult = null!;
     private GedcomExportWriter _exportWriter = null!;
+    private PersonRecord _targetPerson = null!;
+    private GedcomTreeContext _context = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -61,6 +66,8 @@ public class ParserBenchmarks
         using var stream = new MemoryStream(_gedcomBytes);
         _parsedResult = _importAdapter.Parse(stream);
         _exportWriter = new GedcomExportWriter();
+        _targetPerson = _parsedResult.Persons.First(p => p.XrefId == "@I50@");
+        _context = _parsedResult.ToContext();
     }
 
     [Benchmark]
@@ -74,5 +81,29 @@ public class ParserBenchmarks
     public string MeasureExporting()
     {
         return _exportWriter.Write(_parsedResult);
+    }
+
+    [Benchmark]
+    public List<PersonRecord> QueryChildrenLinq()
+    {
+        var targetId = _targetPerson.XrefId;
+        return _parsedResult.Families
+            .Where(f => f.HusbandXref == targetId || f.WifeXref == targetId)
+            .SelectMany(f => f.ChildXrefs)
+            .Select(xref => _parsedResult.Persons.FirstOrDefault(p => p.XrefId == xref))
+            .Where(p => p is not null)
+            .ToList()!;
+    }
+
+    [Benchmark]
+    public List<PersonRecord> QueryChildrenFluent()
+    {
+        return _context.ChildrenOf(_targetPerson).ToList();
+    }
+
+    [Benchmark]
+    public GedcomTreeContext CreateTreeContext()
+    {
+        return _parsedResult.ToContext();
     }
 }

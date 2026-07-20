@@ -4,73 +4,85 @@ A high-performance, zero-dependency, low-allocation C# library for parsing, buil
 
 [![CI](https://github.com/tafallen/gedcom-vector/actions/workflows/ci.yml/badge.svg)](https://github.com/tafallen/gedcom-vector/actions/workflows/ci.yml)
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue.svg)](LICENSE)
+![Target: .NET 8.0](https://img.shields.io/badge/.NET-8.0-purple.svg)
+![Dependencies: Zero](https://img.shields.io/badge/Dependencies-Zero-success.svg)
 
 ---
 
-## Features
+## 🚀 Key Capabilities
 
-- **Blazing-Fast Single-Pass Parser**: Zero-allocation SIMD line reader using .NET 8 `SearchValues<char>` line splitting.
-- **Span-Based String Pooling**: Deduplicates tags, XrefIds, given names, surnames, dates, and places without heap allocations on pool hits.
-- **Direct UTF-8 Exporter**: Formats output tokens directly to UTF-8 byte spans via a 64KB rented buffer, serializing >2.8M records/sec.
-- **Fluent Builder API**: Strongly-typed `GedcomBuilder` for programmatically constructing syntactically valid GEDCOM files.
-- **$O(1)$ Query & Mutation Context**: `GedcomTreeContext` for constant-time parent, child, spouse, and media relationship lookups and incremental updates.
-- **Encoding Auto-Detection**: Auto-detects UTF-8, UTF-16 LE/BE, ANSEL, and Windows-1252. Includes a zero-allocation ANSEL diacritics decoder.
-- **Streaming Pipeline**: Single-pass level-0 record parsing capable of processing gigabyte-sized files with low memory consumption.
-- **Zero Third-Party Runtime Dependencies**: Clean, portable .NET 8 target.
+| Core Engine | Fluent Relationship Context | Developer Experience |
+| :--- | :--- | :--- |
+| **SIMD Tokenizer**: .NET 8 `SearchValues<char>` line splitting. | **$O(1)$ Relationship Traversal**: 298x faster than LINQ scans. | **Fluent Builder (`GedcomBuilder`)**: Strongly-typed tree construction. |
+| **Single-Pass Parser**: Zero-allocation level-0 streaming reader. | **$O(1)$ Incremental Mutability**: Instant add, update, and delete. | **Encoding Auto-Detect**: UTF-8, UTF-16, ANSEL, ANSI (Windows-1252). |
+| **Direct UTF-8 Exporter**: Formats byte spans directly (>2.8M records/sec). | **Span String Pooling**: Deduplicates dates, places, and names. | **Zero Dependencies**: Portable, pure C# .NET 8 codebase. |
 
 ---
 
-## Quick Start
+## 📦 Getting Started
 
-### Installation
-
-Add `Gedcom.Vector` to your project:
+### 1. Installation
 
 ```bash
 dotnet add package Gedcom.Vector
 ```
 
-### Parsing a GEDCOM File
+---
+
+### 2. High-Performance Stream Import & Export
+
+Import GEDCOM files directly into memory-optimized record structures (`GedcomParseResult`), or serialize records directly to streams:
 
 ```csharp
 using Gedcom.Vector;
 
-using var stream = File.OpenRead("family.ged");
-
-// Initialize import adapter (logging and options optional)
+// --- IMPORT ---
+using var inputStream = File.OpenRead("family.ged");
 var importAdapter = new GedcomImportAdapter();
-GedcomParseResult result = importAdapter.Parse(stream);
+GedcomParseResult result = importAdapter.Parse(inputStream);
 
 Console.WriteLine($"Parsed {result.Persons.Count} individuals and {result.Families.Count} families.");
 
-foreach (var person in result.Persons)
-{
-    Console.WriteLine($"{person.XrefId}: {person.FirstName} {person.LastName} (Born: {person.BirthDate})");
-}
-```
-
-### Exporting a GEDCOM File
-
-```csharp
+// --- EXPORT ---
 var exportWriter = new GedcomExportWriter();
 
-// Export to string
-string gedcomText = exportWriter.Write(result);
-
-// Stream directly to file
+// Export directly to file stream (Interpolation-free UTF-8 byte serialization)
 using var outputStream = File.Create("output.ged");
 exportWriter.Write(result, outputStream);
 ```
 
 ---
 
-## Fluent APIs
+### 3. $O(1)$ Relationship Navigation & Tree Mutation (`GedcomTreeContext`)
 
-`Gedcom.Vector` provides optional, strongly-typed Fluent Builder and Query/Mutation APIs to simplify programmatic tree construction and relationship traversal.
+Navigating raw GEDCOM collections usually requires writing slow $O(N)$ LINQ queries. Wrapping the result in `GedcomTreeContext` indexes the tree upon instantiation, enabling **$O(1)$ constant-time relationship lookups** and **$O(1)$ incremental updates**:
 
-### 1. Fluent Builder (`GedcomBuilder`)
+```csharp
+// Wrap result in an indexed context
+GedcomTreeContext tree = result.ToContext();
 
-Build a complete, syntactically correct GEDCOM structure in C# without manually handling lists:
+// 1. O(1) Traversal Queries (53 ns execution time)
+PersonRecord? father = tree.GetPerson("@I1@");
+foreach (var child in tree.ChildrenOf(father))
+{
+    Console.WriteLine($"Child: {child.FirstName} {child.LastName}");
+}
+
+foreach (var spouse in tree.SpousesOf(father))
+{
+    Console.WriteLine($"Spouse: {spouse.FirstName} {spouse.LastName}");
+}
+
+// 2. O(1) Incremental Tree Mutations (Backing collections automatically kept in sync)
+tree.AddPerson(new PersonRecord("@I4@", "Alice", "Doe", PersonSex.Female, null, null, null, null));
+tree.DeletePerson("@I1@"); // Father is deleted and unlinked from spouses, children, and media in O(1) time
+```
+
+---
+
+### 4. Programmatic Tree Construction (`GedcomBuilder`)
+
+Construct syntactically valid GEDCOM trees programmatically without manually creating collections or managing cross-references:
 
 ```csharp
 using Gedcom.Vector.Builder;
@@ -88,79 +100,34 @@ GedcomParseResult result = new GedcomBuilder()
     .Build();
 ```
 
-### 2. High-Performance Query & Mutation Context (`GedcomTreeContext`)
-
-Navigating raw GEDCOM results usually requires writing slow $O(N)$ linear-scanning LINQ queries. The `GedcomTreeContext` indexes the tree upon instantiation, enabling **$O(1)$ relationship queries** and **$O(1)$ incremental updates** (avoiding full recomputations):
-
-```csharp
-// Wrap the result in an indexed context
-GedcomTreeContext tree = result.ToContext();
-
-// 1. O(1) Traversal Queries
-PersonRecord? john = tree.GetPerson("@I1@");
-foreach (var child in tree.ChildrenOf(john))
-{
-    Console.WriteLine($"Child: {child.FirstName} {child.LastName}");
-}
-
-// 2. O(1) Incremental Updates (Backing lists are kept in sync automatically)
-tree.AddPerson(new PersonRecord("@I4@", "Alice", "Doe", PersonSex.Female, null, null, null, null));
-tree.DeletePerson("@I1@"); // John is deleted and unlinked from spouses/children/media automatically!
-```
-
 ---
 
-## Encoding Detection
+## ⚡ Performance & Benchmarks
 
-`GedcomEncodingDetector` automatically selects the correct decoder:
+> [!NOTE]
+> **Architecture & Benchmark Interfaces**: 
+> - **Core Stream Import/Export (`MeasureParsing` / `MeasureExporting`)**: Benchmarks streaming parsing and serialization between raw streams and `GedcomParseResult` records (non-fluent).
+> - **Relationship Traversal (`QueryChildrenFluent`)**: Benchmarks $O(1)$ relationship queries using the optional indexed `GedcomTreeContext`.
 
-| Declared `CHAR` tag | Encoding used         |
-|---------------------|-----------------------|
-| `UTF-8`             | UTF-8                 |
-| `UNICODE`           | UTF-16 LE/BE (via BOM)|
-| `ANSEL`             | Custom ANSEL decoder  |
-| `ANSI`              | Windows-1252          |
-| *(absent)*          | UTF-8 (default)       |
-
-BOM detection takes priority over the declared tag.
-
----
-
-## Configuration
-
-| Option              | Type   | Default    | Description                              |
-|---------------------|--------|------------|------------------------------------------|
-| `MaxFileSizeBytes`  | `long` | `52428800` | Maximum allowed GEDCOM file size (bytes) |
-
----
-
-## Performance & Benchmarks
-
-> **Interface Architecture Note**: The core `MeasureParsing` and `MeasureExporting` methods benchmark standard import/export operations between raw streams and `GedcomParseResult` (non-fluent record models). To perform fast relationship lookups, developers can optionally wrap the result in `GedcomTreeContext` (`ToContext()`).
-
-Below are the BenchmarkDotNet performance metrics for a dataset consisting of **4,000 individuals** (`INDI`) and **2,000 families** (`FAM`):
+BenchmarkDotNet metrics evaluated on a dataset of **4,000 individuals** (`INDI`) and **2,000 families** (`FAM`):
 
 ### 1. Core Streaming Import & Export (`GedcomParseResult`)
 
-| Method | Mean | Error | StdDev | Gen0 | Gen1 | Gen2 | Allocated |
-| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| **MeasureParsing** | **3.51 ms** | 0.07 ms | 0.14 ms | 500.00 | 472.66 | 210.94 | **3.06 MB** |
-| **MeasureExporting** | **1.11 ms** | 0.02 ms | 0.04 ms | 746.09 | 724.61 | 646.48 | **4.03 MB** |
+| Method | Mean Execution Time | Gen0 | Gen1 | Gen2 | Allocated Memory | Throughput |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
+| **MeasureParsing** | **3.51 ms** | 500.00 | 472.66 | 210.94 | **3.06 MB** | ~1.14M records/sec |
+| **MeasureExporting** | **1.11 ms** | 746.09 | 724.61 | 646.48 | **4.03 MB** | **>2.8M records/sec** |
 
 ### 2. Relationship Query Interface Benchmark (`LINQ` vs `Fluent GedcomTreeContext`)
 
-Comparing relationship traversal (finding children of a target individual) using raw LINQ vs. the Fluent `GedcomTreeContext`:
+| Query Interface Method | Mean Execution Time | StdDev | Gen0 | Allocated Memory | Speedup vs LINQ |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| **QueryChildrenLinq** *(Raw LINQ Scan)* | **15,840.57 ns** (15.84 µs) | 257.00 ns | 0.0610 | 664 B | 1.0x *(Baseline)* |
+| **QueryChildrenFluent** *(`GedcomTreeContext`)* | **53.19 ns** | 0.50 ns | 0.0181 | 152 B | **298x Faster** |
+| **CreateTreeContext** *(One-Time Indexing)* | **1.14 ms** | 52.05 µs | 179.69 | 1.10 MB | *(Pays off after 72 queries)* |
 
-| Query Interface Method | Mean | Error | StdDev | Gen0 | Allocated | Speedup vs LINQ |
-| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
-| **QueryChildrenLinq** *(Raw LINQ Scan)* | **15,840.57 ns** (15.84 µs) | 274.74 ns | 257.00 ns | 0.0610 | 664 B | 1.0x (Baseline) |
-| **QueryChildrenFluent** *(`GedcomTreeContext`)* | **53.19 ns** | 0.56 ns | 0.50 ns | 0.0181 | 152 B | **298x Faster** |
-| **CreateTreeContext** *(One-Time Indexing)* | **1.14 ms** | 22.65 µs | 52.05 µs | 179.69 | 1.10 MB | *(Pays off in 72 queries)* |
-
-### Key Performance Highlights:
-* **Fluent Query Acceleration**: Relationship queries using `GedcomTreeContext` execute in **53.19 ns**—making them **298x faster** than traditional LINQ scans.
-* **Context Indexing Pay-Off**: Building `GedcomTreeContext` takes **1.14 ms** and allocates **1.10 MB** for a 4,000-person tree, paying off its CPU time cost after just **72 queries**.
-* **Stream Serialization**: Exports 4,000 records in **1.11 ms** (>2.8 million records/second).
+> [!TIP]
+> **Context Indexing Pay-Off Math**: Building `GedcomTreeContext` takes **1.14 ms** for a 4,000-person tree. Because fluent queries execute in **53.19 ns** (vs **15.84 µs** for LINQ), context indexing pays off its entire CPU time cost after just **72 relationship queries**.
 
 To execute benchmarks locally:
 ```bash
@@ -169,13 +136,35 @@ dotnet run -c Release --project tests/Gedcom.Vector.Benchmarks -- --filter *
 
 ---
 
-## Project Structure
+## 🛠️ Technical Reference
+
+### Character Encoding Detection
+
+`GedcomEncodingDetector` automatically selects the target decoder:
+
+| Declared `CHAR` Tag | Decoder Used | Notes |
+| :--- | :--- | :--- |
+| `UTF-8` | UTF-8 | Standard default |
+| `UNICODE` | UTF-16 LE/BE | Identified via Byte Order Mark (BOM) |
+| `ANSEL` | Custom `AnselDecoder` | $O(1)$ zero-allocation combining diacritics decoder |
+| `ANSI` | Windows-1252 | Extended Windows Latin-1 |
+| *(absent)* | UTF-8 | Fallback default |
+
+### Configuration Options
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `MaxFileSizeBytes` | `long` | `52428800` (50 MB) | Maximum allowed GEDCOM file size limit in bytes |
+
+---
+
+## 📂 Project Structure & Documentation
 
 ```
 gedcom-vector/
 ├── src/
 │   └── Gedcom.Vector/
-│       ├── Builder/           # GedcomBuilder, PersonBuilder, FamilyBuilder
+│       ├── Builder/           # GedcomBuilder, PersonBuilder, FamilyBuilder, MediaBuilder
 │       ├── Parsing/           # StreamingGedcomParser, GedcomStringPool, AnselDecoder
 │       ├── GedcomImportAdapter.cs
 │       ├── GedcomExportWriter.cs
@@ -183,35 +172,22 @@ gedcom-vector/
 │       ├── GedcomTreeContext.cs
 │       └── ...
 ├── tests/
-│   ├── Gedcom.Vector.Tests/
-│   │   ├── AnselDecoderTests.cs
-│   │   ├── GedcomEncodingDetectorTests.cs
-│   │   ├── GedcomFluentEdgeCaseTests.cs
-│   │   ├── GedcomBranchCoverageTests.cs
-│   │   └── ...
+│   ├── Gedcom.Vector.Tests/   # Unit tests (90.4% Line Rate, 84.6% Branch Rate)
 │   └── Gedcom.Vector.Benchmarks/
-│       └── ParserBenchmarks.cs
-├── .github/workflows/
-│   ├── ci.yml
-│   └── publish.yml
+├── docs/
+│   ├── architecture.md        # Technical Architecture Guide & Pipeline Diagrams
+│   └── performance_roadmap.md # Performance Roadmap & Historical Benchmarks
 ├── LICENSE
 └── README.md
 ```
 
+For detailed architectural diagrams and deep-dive technical specs, see the **[Architecture Guide](docs/architecture.md)** and **[Performance Roadmap](docs/performance_roadmap.md)**.
+
 ---
 
-## License
+## 📜 License & Support
 
 **Free for non-commercial use** under the [PolyForm Noncommercial License 1.0.0](LICENSE).
 
-This covers:
-- Personal projects, hobby use, research, and education
-- Non-profit and public-sector organizations
-
-**Commercial use requires a separate license.** Please [open an issue](https://github.com/tafallen/gedcom-vector/issues) or contact the author to discuss commercial licensing terms.
-
----
-
-## Contributing
-
-This library is extracted from the [FAMTree](https://github.com/tafallen/FAMTree) project. Bug reports and suggestions are welcome via GitHub Issues.
+* **Allowed**: Personal projects, research, open-source software, non-profit organizations.
+* **Commercial Use**: Requires a commercial license. Please [open an issue](https://github.com/tafallen/gedcom-vector/issues) to discuss commercial terms.

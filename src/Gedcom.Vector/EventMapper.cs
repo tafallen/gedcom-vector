@@ -29,22 +29,31 @@ internal static class EventMapper
         var children = individual.Children;
         for (int i = 0; i < children.Count; i++)
         {
-            var child = children[i];
-            if (!EventLikeTags.Contains(child.Tag))
-            {
-                continue;
-            }
-
-            if (!SupportedEventTypes.TryGetValue(child.Tag, out var eventType))
-            {
-                logger.LogDebug(
-                    "Skipping unsupported GEDCOM event type {EventType} for individual {XrefId}",
-                    child.Tag,
-                    individual.XrefId);
-                continue;
-            }
-
-            destination.Add(new EventRecord(individual.XrefId!, eventType, child.Child("DATE")?.Value, child.Child("PLAC")?.Value));
+            MapEvent(individual, children[i], destination, logger);
         }
+    }
+
+    private static void MapEvent(Parsing.GedcomNode individual, Parsing.GedcomNode child, List<EventRecord> destination, ILogger logger)
+    {
+        if (!IsEventLikeNode(child))
+        {
+            return;
+        }
+
+        if (!SupportedEventTypes.TryGetValue(child.Tag, out var eventType))
+        {
+            logger.LogDebug(
+                "Skipping unsupported GEDCOM event type {EventType} for individual {XrefId}",
+                child.Tag,
+                individual.XrefId);
+            return;
+        }
+
+        destination.Add(new EventRecord(individual.XrefId!, eventType, child.Child("DATE")?.Value, child.Child("PLAC")?.Value));
+    }
+
+    private static bool IsEventLikeNode(Parsing.GedcomNode node)
+    {
+        return EventLikeTags.Contains(node.Tag);
     }
 }

@@ -1,4 +1,4 @@
-# Gedcom.Vector Performance Optimization Roadmap
+# Gedcom.Vector Performance Optimization Roadmap & Benchmark Report
 
 This document outlines the architectural bottlenecks, completed performance optimizations, and measured benchmark results for `Gedcom.Vector`.
 
@@ -6,53 +6,34 @@ This document outlines the architectural bottlenecks, completed performance opti
 
 ## Executive Summary
 
-`Gedcom.Vector` features a high-throughput, zero-allocation tokenizing pipeline. Through six strategic optimization pillars, the library achieves hardware-bound parsing and exporting speeds:
+`Gedcom.Vector` features a high-throughput, zero-allocation tokenizing pipeline. Through six strategic optimization pillars, the library achieves hardware-bound parsing, exporting, and relationship query performance:
 
 1. **Zero-Allocation UTF-8 Reader**: Replaced `StreamReader.ReadLine()` with span-based buffer reading. `[COMPLETED]`
 2. **SIMD Acceleration**: Utilized .NET 8 `SearchValues<char>` and SIMD vectors for line and delimiter scanning. `[COMPLETED]`
 3. **Single-Pass Direct Parser**: Bypassed intermediate `GedcomLine` and `GedcomNode` heap allocations for standard records. `[COMPLETED]`
 4. **Value & String Pooling**: Interned places, dates, and surnames using `GedcomStringPool` to cut retained memory by >77%. `[COMPLETED]`
 5. **Direct UTF-8 `Utf8StreamWriter` Export**: Formatted tokens directly to UTF-8 byte spans, accelerating serialization by 5.58x. `[COMPLETED]`
+6. **Fluent Query Acceleration**: `GedcomTreeContext` enables $O(1)$ constant-time relationship lookups in **53.19 ns** (**298x faster** than LINQ). `[COMPLETED]`
 
 ---
 
-## Detailed Technical Architecture & Optimization Vectors
+## Measured Benchmark Report (4,000-Person Family Tree Dataset)
 
-### 1. Zero-Allocation UTF-8 Reader Pipeline `[COMPLETED]`
-* **Problem**: `ReadLines()` originally called `StreamReader.ReadLine()`, creating a managed `string` object for every line in the file.
-* **Implementation**: Implemented `StreamingGedcomParser` using rented `char[]` buffers from `ArrayPool<char>.Shared`.
+### 1. Core Streaming Serialization (`GedcomParseResult`)
 
----
+> **Note**: `MeasureParsing` and `MeasureExporting` measure parsing/exporting between raw streams and `GedcomParseResult` record structures (non-fluent).
 
-### 2. SIMD & Hardware Acceleration (`Gedcom.Vector`) `[COMPLETED]`
-* **Problem**: Line break scanning used scalar string searching.
-* **Implementation**: Utilized .NET 8 `SearchValues<char>` containing `\r` and `\n` to locate line breaks using hardware SIMD vector instructions (`Vector128`/`Vector256`).
+| Method | Mean Execution Time | Gen0 | Gen1 | Gen2 | Allocated | Throughput |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
+| **MeasureParsing** | **3.51 ms** | 500.00 | 472.66 | 210.94 | **3.06 MB** | ~1.14M records/sec |
+| **MeasureExporting** | **1.11 ms** | 746.09 | 724.61 | 646.48 | **4.03 MB** | **>2.8M records/sec** |
 
----
+### 2. Relationship Query Interface Benchmark (`LINQ` vs `Fluent GedcomTreeContext`)
 
-### 3. Single-Pass Direct Parser (Bypassing AST Heap Allocations) `[COMPLETED]`
-* **Problem**: Parsing followed a 4-tier pipeline creating `GedcomLine`, `GedcomNode` trees, and child lists.
-* **Implementation**: Implemented a streaming level-0 state machine. Recognized records (`INDI`, `FAM`, `OBJE`) are populated directly from character line spans into final records (`PersonRecord`, `FamilyRecord`, `MediaReferenceRecord`), cutting transient memory allocations during parsing from **13.52 MB down to 3.07 MB (77.3% reduction)**.
+Comparing relationship traversal (finding children of a target individual) using raw LINQ queries vs. the Fluent `GedcomTreeContext`:
 
----
-
-### 4. Value Interning & Global String Pooling (Places, Dates, Surnames) `[COMPLETED]`
-* **Problem**: Places like `"New York, USA"`, dates like `"1 JAN 1900"`, and surnames like `"Smith"` repeat thousands of times.
-* **Implementation**: Built `GedcomStringPool` with a custom span-hashed lookup table over `ReadOnlySpan<char>`, guaranteeing **zero allocations on pool hits**.
-
----
-
-### 5. Direct UTF-8 `Utf8StreamWriter` Serialization in Export Pipeline `[COMPLETED]`
-* **Problem**: `GedcomExportWriter` relied on `StreamWriter` text encoding buffers.
-* **Implementation**: Serializes constant UTF-8 byte spans (`"0 "u8`, `" INDI\n"u8`) directly via a 64KB rented buffer (`ArrayPool<byte>`), increasing export speed from **7.92 ms down to 1.42 ms (5.58x faster)**.
-
----
-
-## Measured Performance Metrics (4,000-Person Family Tree Dataset)
-
-| Optimization Vector | Metric | Baseline (`main`) | Optimized | Improvement |
-| :--- | :--- | :--- | :--- | :--- |
-| **MeasureParsing** | **Mean Execution Time** | 13.18 ms | **5.17 ms** | **2.55x Faster (60.8% Speedup)** |
-| | **Allocated Memory** | 13.52 MB | **3.07 MB** | **77.3% Reduction (4.4x Lower Memory)** |
-| **MeasureExporting** | **Mean Execution Time** | 7.92 ms | **1.42 ms** | **5.58x Faster (82.1% Speedup)** |
-| | **Allocated Memory** | 4.52 MB | **4.04 MB** | **10.6% Reduction** |
+| Query Interface Method | Mean Time | StdDev | Gen0 | Allocated | Speedup vs LINQ |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| **QueryChildrenLinq** *(Raw LINQ Scan)* | **15,840.57 ns** (15.84 µs) | 257.00 ns | 0.0610 | 664 B | 1.0x (Baseline) |
+| **QueryChildrenFluent** *(`GedcomTreeContext`)* | **53.19 ns** | 0.50 ns | 0.0181 | 152 B | **298x Faster** |
+| **CreateTreeContext** *(One-Time Indexing)* | **1.14 ms** | 52.05 µs | 179.69 | 1.10 MB | *(Pays off in 72 queries)* |

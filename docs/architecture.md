@@ -103,5 +103,6 @@ graph TD
   * **High Performance**: Traverses parent, child, and spouse relations in $O(1)$ constant time, bypassing $O(N)$ list-scanning LINQ operations.
   * **Incremental Mutability**: Exposes mutator methods (`AddPerson`, `UpdatePerson`, `DeletePerson`, `AddFamily`, `DeleteFamily`) that update lookup dictionaries and backing collections in $O(1)$ time, completely avoiding full $O(N)$ tree indexing recomputations.
 * **Costs**:
-  * **Initialization**: Indices are built during instantiation, taking **1.19 ms** and allocating **1.15 MB** of memory for a 4,000-person tree (scales linearly $O(N)$).
-  * **Break-Even Point (CPU)**: In a 100-person tree, context indexing pays off after **17 queries**. In a 4,000-person tree, it pays off after **82 queries**.
+  * **Initialization**: Indices are built during instantiation, taking **1.14 ms** and allocating **1.10 MB** of memory for a 4,000-person tree (scales linearly $O(N)$).
+  * **Query Speed**: Traversal queries execute in **53.19 ns** (**298x faster** than traditional LINQ scans).
+  * **Break-Even Point (CPU)**: In a 100-person tree, context indexing pays off after **17 queries**. In a 4,000-person tree, it pays off after **72 queries**.

@@ -134,19 +134,33 @@ BOM detection takes priority over the declared tag.
 
 ---
 
-## Performance
+## Performance & Benchmarks
 
-The library features a single-pass streaming parser with zero-allocation SIMD line splitting (`SearchValues<char>`) and string pooling. Below are the BenchmarkDotNet performance metrics for parsing and exporting a dataset of **4,000 individuals** (`INDI`) and **2,000 families** (`FAM`):
+> **Interface Architecture Note**: The core `MeasureParsing` and `MeasureExporting` methods benchmark standard import/export operations between raw streams and `GedcomParseResult` (non-fluent record models). To perform fast relationship lookups, developers can optionally wrap the result in `GedcomTreeContext` (`ToContext()`).
+
+Below are the BenchmarkDotNet performance metrics for a dataset consisting of **4,000 individuals** (`INDI`) and **2,000 families** (`FAM`):
+
+### 1. Core Streaming Import & Export (`GedcomParseResult`)
 
 | Method | Mean | Error | StdDev | Gen0 | Gen1 | Gen2 | Allocated |
 | :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| **MeasureParsing** | **5.17 ms** | 0.32 ms | 0.93 ms | 507.81 | 460.94 | 218.75 | **3.07 MB** |
-| **MeasureExporting** | **1.42 ms** | 0.04 ms | 0.10 ms | 736.33 | 722.66 | 634.77 | **4.04 MB** |
+| **MeasureParsing** | **3.51 ms** | 0.07 ms | 0.14 ms | 500.00 | 472.66 | 210.94 | **3.06 MB** |
+| **MeasureExporting** | **1.11 ms** | 0.02 ms | 0.04 ms | 746.09 | 724.61 | 646.48 | **4.03 MB** |
+
+### 2. Relationship Query Interface Benchmark (`LINQ` vs `Fluent GedcomTreeContext`)
+
+Comparing relationship traversal (finding children of a target individual) using raw LINQ vs. the Fluent `GedcomTreeContext`:
+
+| Query Interface Method | Mean | Error | StdDev | Gen0 | Allocated | Speedup vs LINQ |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
+| **QueryChildrenLinq** *(Raw LINQ Scan)* | **15,840.57 ns** (15.84 µs) | 274.74 ns | 257.00 ns | 0.0610 | 664 B | 1.0x (Baseline) |
+| **QueryChildrenFluent** *(`GedcomTreeContext`)* | **53.19 ns** | 0.56 ns | 0.50 ns | 0.0181 | 152 B | **298x Faster** |
+| **CreateTreeContext** *(One-Time Indexing)* | **1.14 ms** | 22.65 µs | 52.05 µs | 179.69 | 1.10 MB | *(Pays off in 72 queries)* |
 
 ### Key Performance Highlights:
-* **Parsing Throughput**: Parses 4,000 individuals in **5.17 ms** (**2.55x faster** than baseline).
-* **Memory Efficiency**: Cuts transient parsing heap allocations by **77.3%** (from 13.52 MB down to 3.07 MB).
-* **Exporting Throughput**: Exports 4,000 records in **1.42 ms** (**5.58x faster** than baseline, serializing >2.8M records/sec).
+* **Fluent Query Acceleration**: Relationship queries using `GedcomTreeContext` execute in **53.19 ns**—making them **298x faster** than traditional LINQ scans.
+* **Context Indexing Pay-Off**: Building `GedcomTreeContext` takes **1.14 ms** and allocates **1.10 MB** for a 4,000-person tree, paying off its CPU time cost after just **72 queries**.
+* **Stream Serialization**: Exports 4,000 records in **1.11 ms** (>2.8 million records/second).
 
 To execute benchmarks locally:
 ```bash

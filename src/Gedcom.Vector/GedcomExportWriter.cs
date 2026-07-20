@@ -315,9 +315,12 @@ public class GedcomExportWriter : IGedcomExportWriter
         {
             for (int i = 0; i < mediaXrefs.Count; i++)
             {
-                writer.WriteUtf8("1 OBJE @"u8);
-                writer.WriteString(mediaXrefs[i]);
-                writer.WriteUtf8("@\n"u8);
+                var mId = mediaXrefs[i];
+                writer.WriteUtf8("1 OBJE "u8);
+                if (!mId.StartsWith('@')) writer.WriteByte((byte)'@');
+                writer.WriteString(mId);
+                if (!mId.EndsWith('@')) writer.WriteByte((byte)'@');
+                writer.WriteByte((byte)'\n');
             }
         }
     }

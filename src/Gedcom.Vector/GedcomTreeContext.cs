@@ -300,31 +300,7 @@ public class GedcomTreeContext
         }
 
         // 4. Clean up media references
-        _mediaByEntityId.Remove(xref);
-        for (int i = 0; i < _backingResult.Media.Count; i++)
-        {
-            var med = _backingResult.Media[i];
-            if (med.LinkedXrefIds.Contains(xref))
-            {
-                var updatedLinked = med.LinkedXrefIds.Where(id => id != xref).ToList();
-                var updatedMed = med with { LinkedXrefIds = updatedLinked };
-                _backingResult.Media[i] = updatedMed;
-
-                foreach (var entityId in updatedLinked)
-                {
-                    if (_mediaByEntityId.TryGetValue(entityId, out var mediaList))
-                    {
-                        for (int j = 0; j < mediaList.Count; j++)
-                        {
-                            if (mediaList[j].XrefId == med.XrefId)
-                            {
-                                mediaList[j] = updatedMed;
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        UnlinkEntityFromMedia(xref);
     }
 
     /// <summary>
@@ -414,15 +390,27 @@ public class GedcomTreeContext
         _childrenByFamilyId.Remove(xref);
 
         // Clean up media references
-        _mediaByEntityId.Remove(xref);
-        for (int i = 0; i < _backingResult.Media.Count; i++)
+        UnlinkEntityFromMedia(xref);
+    }
+
+    private void UnlinkEntityFromMedia(string xref)
+    {
+        if (_mediaByEntityId.TryGetValue(xref, out var linkedMediaList))
         {
-            var med = _backingResult.Media[i];
-            if (med.LinkedXrefIds.Contains(xref))
+            var mediaToUpdate = linkedMediaList.ToList();
+            _mediaByEntityId.Remove(xref);
+
+            for (int i = 0; i < mediaToUpdate.Count; i++)
             {
+                var med = mediaToUpdate[i];
                 var updatedLinked = med.LinkedXrefIds.Where(id => id != xref).ToList();
                 var updatedMed = med with { LinkedXrefIds = updatedLinked };
-                _backingResult.Media[i] = updatedMed;
+
+                int bIdx = _backingResult.Media.IndexOf(med);
+                if (bIdx >= 0)
+                {
+                    _backingResult.Media[bIdx] = updatedMed;
+                }
 
                 foreach (var entityId in updatedLinked)
                 {

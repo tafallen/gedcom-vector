@@ -51,6 +51,10 @@ internal static class StreamingGedcomParser
         string? mediaFilePath = null;
         string? mediaFormat = null;
 
+        string? unparsedTag = null;
+        string? unparsedValue = null;
+        List<string>? unparsedRawLines = null;
+
         StringBuilder? concBuilder = null;
         ConcTarget concTarget = ConcTarget.None;
 
@@ -116,6 +120,17 @@ internal static class StreamingGedcomParser
                 case RecordType.Media when currentXref != null:
                     mediaNodes.Add((currentXref, mediaTitle, mediaFilePath, mediaFormat));
                     break;
+
+                case RecordType.Unparsed:
+                    if (unparsedTag != null)
+                    {
+                        result.UnparsedRecords.Add(new UnparsedRecord(
+                            currentXref,
+                            unparsedTag,
+                            unparsedValue,
+                            unparsedRawLines));
+                    }
+                    break;
             }
 
             // Reset state
@@ -137,6 +152,9 @@ internal static class StreamingGedcomParser
             mediaTitle = null;
             mediaFilePath = null;
             mediaFormat = null;
+            unparsedTag = null;
+            unparsedValue = null;
+            unparsedRawLines = null;
         }
 
         // Buffer reading loop using rented ArrayPool char buffer
@@ -307,6 +325,20 @@ internal static class StreamingGedcomParser
                     currentRecordType = RecordType.Media;
                     currentXref = pool.GetOrAdd(xrefSpan);
                 }
+                else if (!tagSpan.SequenceEqual("HEAD") && !tagSpan.SequenceEqual("TRLR"))
+                {
+                    currentRecordType = RecordType.Unparsed;
+                    currentXref = xrefSpan.IsEmpty ? null : pool.GetOrAdd(xrefSpan);
+                    unparsedTag = pool.GetOrAdd(tagSpan);
+                    unparsedValue = valueSpan.IsEmpty ? null : valueSpan.ToString();
+                    unparsedRawLines = new List<string>();
+                }
+                return;
+            }
+
+            if (currentRecordType == RecordType.Unparsed)
+            {
+                unparsedRawLines?.Add(line.ToString());
                 return;
             }
 
@@ -550,7 +582,7 @@ internal static class StreamingGedcomParser
         return new StreamReader(stream, encodingResult.Encoding ?? Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: -1, leaveOpen: true);
     }
 
-    private enum RecordType { None, Person, Family, Media, Other }
+    private enum RecordType { None, Person, Family, Media, Unparsed, Other }
     private enum SubTag { None, Birth, Death, Marriage, OtherEvent }
     private enum ConcTarget { None, PersonFirstName, PersonLastName, PersonBirthPlace, PersonDeathPlace, FamMarriagePlace, MediaTitle }
 }

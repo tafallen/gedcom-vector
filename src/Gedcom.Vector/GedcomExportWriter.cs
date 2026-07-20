@@ -163,6 +163,12 @@ public class GedcomExportWriter : IGedcomExportWriter
             WriteMedia(ref writer, mediaList[i]);
         }
 
+        var unparsedList = parseResult.UnparsedRecords;
+        for (int i = 0; i < unparsedList.Count; i++)
+        {
+            WriteUnparsed(ref writer, unparsedList[i]);
+        }
+
         writer.WriteUtf8("0 TRLR"u8);
     }
 
@@ -307,6 +313,19 @@ public class GedcomExportWriter : IGedcomExportWriter
             writer.WriteString(media.FilePath);
             writer.WriteByte((byte)'\n');
         }
+
+        if (media.LinkedXrefIds.Count > 0)
+        {
+            for (int i = 0; i < media.LinkedXrefIds.Count; i++)
+            {
+                var mId = media.LinkedXrefIds[i];
+                if (mId is null) continue;
+                if (!mId.StartsWith('@') || !mId.EndsWith('@')) continue;
+                writer.WriteUtf8("1 _LINK "u8);
+                writer.WriteString(mId);
+                writer.WriteUtf8("\n"u8);
+            }
+        }
     }
 
     private static void WriteObjeLines(ref Utf8StreamWriter writer, string entityXref, IReadOnlyDictionary<string, List<string>> mediaByLinkedXref)
@@ -321,6 +340,32 @@ public class GedcomExportWriter : IGedcomExportWriter
                 writer.WriteString(mId);
                 if (!mId.EndsWith('@')) writer.WriteByte((byte)'@');
                 writer.WriteByte((byte)'\n');
+            }
+        }
+    }
+
+    private static void WriteUnparsed(ref Utf8StreamWriter writer, UnparsedRecord record)
+    {
+        writer.WriteUtf8("0 "u8);
+        if (record.XrefId is not null)
+        {
+            writer.WriteString(record.XrefId);
+            writer.WriteUtf8(" "u8);
+        }
+        writer.WriteString(record.Tag);
+        if (record.Value is not null)
+        {
+            writer.WriteUtf8(" "u8);
+            writer.WriteString(record.Value);
+        }
+        writer.WriteUtf8("\n"u8);
+
+        if (record.RawLines is not null)
+        {
+            for (int i = 0; i < record.RawLines.Count; i++)
+            {
+                writer.WriteString(record.RawLines[i]);
+                writer.WriteUtf8("\n"u8);
             }
         }
     }

@@ -98,6 +98,24 @@ public sealed class GedcomStringPool
         _entries = newEntries;
     }
 
+    /// <summary>
+    /// Resets and clears all interned strings from the pool, allowing memory recycling.
+    /// </summary>
+    public void Clear()
+    {
+        if (_count > 0)
+        {
+            Array.Fill(_buckets, -1);
+            Array.Clear(_entries, 0, _count);
+            _count = 0;
+        }
+    }
+
+    /// <summary>
+    /// Gets the current number of unique strings stored in the pool.
+    /// </summary>
+    public int Count => _count;
+
     private static int GetPrime(int min)
     {
         int[] primes = { 37, 67, 131, 257, 521, 1031, 2053, 4099, 8209, 16411, 32771, 65537, 131101, 262147 };

@@ -28,6 +28,11 @@ public class GedcomParseResult
     public List<MediaReferenceRecord> Media { get; } = new();
 
     /// <summary>
+    /// Gets the list of unparsed or custom level-0 records preserved for lossless round-tripping.
+    /// </summary>
+    public List<UnparsedRecord> UnparsedRecords { get; } = new();
+
+    /// <summary>
     /// Gets the list of warning or error messages encountered during parsing.
     /// </summary>
     public List<string> Errors { get; } = new();

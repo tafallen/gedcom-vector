@@ -1,161 +1,67 @@
 # Gedcom.Vector
 
-A portable **.NET 8** GEDCOM 5.5.1 parser, lexer, encoder, and serializer. Zero genealogy-app-specific dependencies — just `Microsoft.Extensions` abstractions.
+A high-performance, zero-dependency, low-allocation C# library for parsing, building, mutating, and exporting GEDCOM genealogy files.
 
 [![CI](https://github.com/tafallen/gedcom-vector/actions/workflows/ci.yml/badge.svg)](https://github.com/tafallen/gedcom-vector/actions/workflows/ci.yml)
-[![NuGet](https://img.shields.io/nuget/v/Gedcom.Vector)](https://www.nuget.org/packages/Gedcom.Vector)
-[![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue)](LICENSE)
+[![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue.svg)](LICENSE)
 
 ---
 
 ## Features
 
-- 📄 **Full GEDCOM 5.5.1 support** — parses HEAD, INDI, FAM, OBJE, and TRLR records
-- 🔡 **Multi-encoding support** — UTF-8 (with/without BOM), UTF-16 (with BOM), ANSEL, and ANSI/Windows-1252
-- ⚡ **Streaming lexer** — low-allocation line-by-line tokeniser backed by `GedcomLexer` and `GedcomTreeBuilder`
-- 📦 **NuGet-ready** — structured for `dotnet pack` with symbols (`.snupkg`)
-- 💉 **DI-friendly** — integrates with `Microsoft.Extensions.DependencyInjection` via `AddGedcomImport()`
-- 🔒 **No app-specific dependencies** — only `Microsoft.Extensions.*` abstractions; no EF Core, no ASP.NET, no databases
-- ✅ **Deterministic builds** — reproducible byte-for-byte output
+- **Blazing-Fast Single-Pass Parser**: Zero-allocation SIMD line reader using .NET 8 `SearchValues<char>` line splitting.
+- **Span-Based String Pooling**: Deduplicates tags, XrefIds, given names, surnames, dates, and places without heap allocations on pool hits.
+- **Direct UTF-8 Exporter**: Formats output tokens directly to UTF-8 byte spans via a 64KB rented buffer, serializing >2.8M records/sec.
+- **Fluent Builder API**: Strongly-typed `GedcomBuilder` for programmatically constructing syntactically valid GEDCOM files.
+- **$O(1)$ Query & Mutation Context**: `GedcomTreeContext` for constant-time parent, child, spouse, and media relationship lookups and incremental updates.
+- **Encoding Auto-Detection**: Auto-detects UTF-8, UTF-16 LE/BE, ANSEL, and Windows-1252. Includes a zero-allocation ANSEL diacritics decoder.
+- **Streaming Pipeline**: Single-pass level-0 record parsing capable of processing gigabyte-sized files with low memory consumption.
+- **Zero Third-Party Runtime Dependencies**: Clean, portable .NET 8 target.
 
 ---
 
 ## Quick Start
 
-### Install
+### Installation
+
+Add `Gedcom.Vector` to your project:
 
 ```bash
 dotnet add package Gedcom.Vector
 ```
 
-### Register with Dependency Injection
+### Parsing a GEDCOM File
 
 ```csharp
-// Program.cs / Startup.cs
-builder.Services.AddGedcomImport(builder.Configuration);
-```
+using Gedcom.Vector;
 
-This registers `IGedcomImportAdapter` as a singleton, bound to the `GedcomImport` configuration section.
+using var stream = File.OpenRead("family.ged");
 
-```json
-// appsettings.json
-{
-  "GedcomImport": {
-    "MaxFileSizeBytes": 52428800
-  }
-}
-```
+// Initialize import adapter (logging and options optional)
+var importAdapter = new GedcomImportAdapter();
+GedcomParseResult result = importAdapter.Parse(stream);
 
-### Parse a GEDCOM file
+Console.WriteLine($"Parsed {result.Persons.Count} individuals and {result.Families.Count} families.");
 
-```csharp
-public class MyService(IGedcomImportAdapter gedcom)
-{
-    public GedcomParseResult Import(Stream gedcomStream)
-    {
-        var result = gedcom.Parse(gedcomStream);
-
-        foreach (var person in result.Persons)
-            Console.WriteLine($"{person.FirstName} {person.LastName}");
-
-        foreach (var family in result.Families)
-            Console.WriteLine($"Family: {family.HusbandXref} + {family.WifeXref}");
-
-        return result;
-    }
-}
-```
-
-### Export to GEDCOM
-
-```csharp
-public class ExportService(IGedcomExportWriter writer)
-{
-    public async Task ExportAsync(GedcomParseResult data, Stream output)
-    {
-        await writer.WriteAsync(data, output);
-    }
-}
-```
-
-### Without DI (direct use)
-
-```csharp
-using var inputStream = File.OpenRead("family.ged");
-var adapter = new GedcomImportAdapter(
-    NullLogger<GedcomImportAdapter>.Instance,
-    Options.Create(new GedcomImportOptions { MaxFileSizeBytes = 10_000_000 })
-);
-GedcomParseResult result = adapter.Parse(inputStream);
-
-// Direct export to file
-using var outputStream = File.Create("output.ged");
-var writer = new GedcomExportWriter();
-writer.Write(result, outputStream);
-```
-
----
-
-## Detailed API & Records Reference
-
-### Inspecting Parsed Individuals (`PersonRecord`)
-```csharp
 foreach (var person in result.Persons)
 {
-    Console.WriteLine($"ID: {person.XrefId}");
-    Console.WriteLine($"Name: {person.FirstName} {person.LastName}");
-    Console.WriteLine($"Sex: {person.Sex}"); // PersonSex.Male / PersonSex.Female / PersonSex.Unknown
-    
-    if (person.BirthDate is not null)
-        Console.WriteLine($"Born: {person.BirthDate} at {person.BirthPlace}");
-    if (person.DeathDate is not null)
-        Console.WriteLine($"Died: {person.DeathDate} at {person.DeathPlace}");
+    Console.WriteLine($"{person.XrefId}: {person.FirstName} {person.LastName} (Born: {person.BirthDate})");
 }
 ```
 
-### Inspecting Family Structures (`FamilyRecord`)
+### Exporting a GEDCOM File
+
 ```csharp
-foreach (var family in result.Families)
-{
-    Console.WriteLine($"Family: {family.XrefId}");
-    Console.WriteLine($"Spouses: {family.HusbandXref} and {family.WifeXref}");
-    Console.WriteLine($"Children IDs: {string.Join(", ", family.ChildXrefs)}");
-    
-    if (family.MarriageDate is not null)
-        Console.WriteLine($"Marriage: {family.MarriageDate} in {family.MarriagePlace}");
-}
+var exportWriter = new GedcomExportWriter();
+
+// Export to string
+string gedcomText = exportWriter.Write(result);
+
+// Stream directly to file
+using var outputStream = File.Create("output.ged");
+exportWriter.Write(result, outputStream);
 ```
 
-### Inspecting Linked Events (`EventRecord`)
-Events are separated from individuals for cleaner data structures, mapped via `PersonXrefId`:
-```csharp
-foreach (var ev in result.Events)
-{
-    Console.WriteLine($"Person: {ev.PersonXrefId}");
-    Console.WriteLine($"Event: {ev.EventType} (Date: {ev.Date}, Place: {ev.Place})");
-}
-```
-
-### Handling Media References (`MediaReferenceRecord`)
-```csharp
-foreach (var media in result.Media)
-{
-    Console.WriteLine($"Title: {media.Title}");
-    Console.WriteLine($"File: {media.FilePath} (MIME: {media.MimeType})");
-    Console.WriteLine($"Linked Entities: {string.Join(", ", media.LinkedXrefIds)}");
-}
-```
-
-### Error and Validation Checking
-Check for parsing validation errors or format issues:
-```csharp
-if (result.Errors.Count > 0)
-{
-    Console.WriteLine("Import completed with errors/warnings:");
-    foreach (var error in result.Errors)
-        Console.WriteLine($"- {error}");
-}
-```
 ---
 
 ## Fluent APIs
@@ -202,13 +108,6 @@ tree.AddPerson(new PersonRecord("@I4@", "Alice", "Doe", PersonSex.Female, null, 
 tree.DeletePerson("@I1@"); // John is deleted and unlinked from spouses/children/media automatically!
 ```
 
-### Benefits and Costs
-
-* **Builder**: Increases readability and reduces reference mapping errors. Negligible overhead.
-* **Context Queries**: Running queries via `GedcomTreeContext` is **300x+ faster** than traditional LINQ scans.
-* **Context Mutability**: Incremental mutators (like `DeletePerson`) execute in **~200 ns** ($O(1)$), compared to **~1.2 ms** ($O(N)$) for a full tree re-indexing.
-* **Break-Even**: Context initialization (indexing) takes **1.19 ms** and allocates **1.15 MB** for a 4,000-person tree. This time cost pays off after **82 relationship queries**.
-
 ---
 
 ## Encoding Detection
@@ -237,12 +136,17 @@ BOM detection takes priority over the declared tag.
 
 ## Performance
 
-The library features a low-allocation line-by-line streaming tokeniser. Below are the BenchmarkDotNet performance metrics for parsing and exporting a sample dataset consisting of 100 individuals (`INDI`) and 50 families (`FAM`):
+The library features a single-pass streaming parser with zero-allocation SIMD line splitting (`SearchValues<char>`) and string pooling. Below are the BenchmarkDotNet performance metrics for parsing and exporting a dataset of **4,000 individuals** (`INDI`) and **2,000 families** (`FAM`):
 
-| Method           | Mean      | Error    | StdDev   | Gen0    | Gen1    | Allocated |
-|----------------- |----------:|---------:|---------:|--------:|--------:|----------:|
-| MeasureParsing   |  95.53 us | 1.707 us | 4.345 us | 41.9922 |  7.8125 | 343.92 KB |
-| MeasureExporting |  21.85 us | 1.459 us | 4.211 us | 14.6790 |  3.6316 | 120.13 KB |
+| Method | Mean | Error | StdDev | Gen0 | Gen1 | Gen2 | Allocated |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| **MeasureParsing** | **5.17 ms** | 0.32 ms | 0.93 ms | 507.81 | 460.94 | 218.75 | **3.07 MB** |
+| **MeasureExporting** | **1.42 ms** | 0.04 ms | 0.10 ms | 736.33 | 722.66 | 634.77 | **4.04 MB** |
+
+### Key Performance Highlights:
+* **Parsing Throughput**: Parses 4,000 individuals in **5.17 ms** (**2.55x faster** than baseline).
+* **Memory Efficiency**: Cuts transient parsing heap allocations by **77.3%** (from 13.52 MB down to 3.07 MB).
+* **Exporting Throughput**: Exports 4,000 records in **1.42 ms** (**5.58x faster** than baseline, serializing >2.8M records/sec).
 
 To execute benchmarks locally:
 ```bash
@@ -257,16 +161,22 @@ dotnet run -c Release --project tests/Gedcom.Vector.Benchmarks -- --filter *
 gedcom-vector/
 ├── src/
 │   └── Gedcom.Vector/
-│       ├── Parsing/           # Lexer, tree builder, ANSEL decoder
+│       ├── Builder/           # GedcomBuilder, PersonBuilder, FamilyBuilder
+│       ├── Parsing/           # StreamingGedcomParser, GedcomStringPool, AnselDecoder
 │       ├── GedcomImportAdapter.cs
 │       ├── GedcomExportWriter.cs
 │       ├── GedcomEncodingDetector.cs
+│       ├── GedcomTreeContext.cs
 │       └── ...
 ├── tests/
-│   └── Gedcom.Vector.Tests/
-│       ├── AnselDecoderTests.cs
-│       ├── GedcomEncodingDetectorTests.cs
-│       └── ...
+│   ├── Gedcom.Vector.Tests/
+│   │   ├── AnselDecoderTests.cs
+│   │   ├── GedcomEncodingDetectorTests.cs
+│   │   ├── GedcomFluentEdgeCaseTests.cs
+│   │   ├── GedcomBranchCoverageTests.cs
+│   │   └── ...
+│   └── Gedcom.Vector.Benchmarks/
+│       └── ParserBenchmarks.cs
 ├── .github/workflows/
 │   ├── ci.yml
 │   └── publish.yml

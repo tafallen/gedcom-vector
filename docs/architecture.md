@@ -6,58 +6,55 @@ This document describes the design principles, parsing/exporting pipelines, and 
 
 ## 1. High-Level Architecture
 
-`Gedcom.Vector` acts as a streaming pipeline that transforms raw binary streams into highly structured, queryable C# record models, and vice-versa. 
+`Gedcom.Vector` acts as a high-performance streaming pipeline that transforms raw binary streams into highly structured, queryable C# record models, and vice-versa. 
 
-The library adheres to a **zero-dependency, low-allocation** philosophy, making it highly portable and memory-efficient.
+The library adheres to a **zero-dependency, zero-alloc tokenizing** philosophy, making it extremely fast and memory-efficient.
 
 ### Data Flow Diagram
 
 ```mermaid
 graph TD
     Stream[Stream Input] --> Detector[GedcomEncodingDetector]
-    Detector --> LineReader[StreamReader.ReadLine]
-    LineReader --> Lexer[GedcomLexer.Tokenize]
-    Lexer --> TreeBuilder[GedcomTreeBuilder.Build]
-    TreeBuilder --> Mappers[Person/Family/Event/Media Mappers]
-    Mappers --> ParseResult[GedcomParseResult]
+    Detector --> Parser[StreamingGedcomParser]
+    Parser --> SIMD[SearchValues SIMD Line Reader]
+    SIMD --> SpanParser[Zero-Alloc Span Parser]
+    SpanParser --> StringPool[GedcomStringPool]
+    StringPool --> ParseResult[GedcomParseResult]
 ```
 
 ---
 
 ## 2. The Import (Parsing) Pipeline
 
-The parsing pipeline processes files in a streaming, single-pass fashion:
+The parsing pipeline processes files in a streaming, single-pass zero-allocation fashion:
 
 ### Step A: Encoding Detection
 * **Component**: `GedcomEncodingDetector`
 * **Behavior**: Scans the first 4KB of the input stream. It prioritizes Byte Order Marks (BOM) for `UTF-8` and `UTF-16` encodings. If no BOM is present, it uses a fast span-based regex search for the `CHAR` tag header.
 * **Encodings Supported**: `UTF-8`, `UTF-16 (Unicode)`, `ANSEL`, `ANSI (Windows-1252)`.
 
-### Step B: Tokenizer (Lexer)
-* **Component**: `GedcomLexer`
-* **Behavior**: Reads text lines, trims spacing, and parses components (`Level`, `XrefId`, `Tag`, `Value`) using C# character spans (`ReadOnlySpan<char>`).
-* **Memory Optimization**:
-  * Avoids regex objects during tokenization.
-  * **Tag Interning**: If a tag matches a known GEDCOM tag literal (e.g., `INDI`, `NAME`), it returns a pre-allocated static string, reducing tag allocations by >99%.
-  * Concatenation continuation tags (`CONC` and `CONT`) are accumulated into a `StringBuilder` and combined only when a new tag is found.
+### Step B: Zero-Alloc SIMD Line Reader & Tokenizer
+* **Component**: `StreamingGedcomParser`
+* **Behavior**: Reads text directly from stream buffers into a 64KB rented `char[]` buffer (`ArrayPool<char>`).
+* **SIMD Acceleration**: Uses .NET 8 `SearchValues<char>` containing line breaks (`\r`, `\n`) to locate line boundaries across 16–32 byte vectors in single CPU instructions.
+* **Span Slicing**: Slices line levels, cross-references (`XrefId`), tags, and values using C# character spans (`ReadOnlySpan<char>`) without allocating intermediate line strings.
 
-### Step C: Ansel Decoder
+### Step C: Single-Pass Streaming Record Parser
+* **Component**: `StreamingGedcomParser`
+* **Behavior**: Maintains a level-0 state machine (`INDI`, `FAM`, `OBJE`). Recognized entities are populated directly from line spans into `PersonRecord`, `FamilyRecord`, and `MediaReferenceRecord` as lines stream by.
+* **Memory Optimization**: Completely bypasses intermediate `GedcomLine`, `GedcomNode`, and child `List<GedcomNode>` AST heap allocations, cutting transient memory allocations by >77%.
+
+### Step D: Ansel Decoder
 * **Component**: `AnselDecoder`
 * **Behavior**: Maps ANSEL combining diacritics and spacing characters to their respective Unicode points.
 * **Memory Optimization**:
   * Employs flat `char[256]` arrays for $O(1)$ constant time lookups instead of hashing dictionaries.
   * Uses a stack-allocated struct `PendingMarks` to buffer combining marks before they are attached to base characters, allocating **zero memory** in standard cases.
 
-### Step D: Hierarchical Tree Builder
-* **Component**: `GedcomTreeBuilder`
-* **Behavior**: Uses a stack-based parser to nest child nodes (`GedcomNode`) under their corresponding parent levels. It streams level-0 records, ensuring only one level-0 record tree is in memory at any point.
-
-### Step E: Object Mapping
-* **Components**: `PersonMapper`, `FamilyMapper`, `EventMapper`, `MediaMapper`
-* **Behavior**: Translates raw `GedcomNode` trees into C# records (`PersonRecord`, `FamilyRecord`, etc.).
-* **Memory Optimization**:
-  * Uses direct loops instead of LINQ lambda closures to avoid delegate instantiation.
-  * Dedupes `XrefId` strings using a local scope-level cache to share identical references across the entire parsed result.
+### Step E: Span-Based String Pooling
+* **Component**: `GedcomStringPool`
+* **Behavior**: Deduplicates tags, `XrefId` strings, surnames, given names, dates, and places across the parsed result.
+* **Memory Optimization**: Employs a custom span-hashed lookup table over `ReadOnlySpan<char>`, guaranteeing **zero allocations on pool hits**.
 
 ---
 
@@ -68,16 +65,16 @@ The export pipeline is designed to serialize structured data with minimal memory
 ```mermaid
 graph LR
     ParseResult[GedcomParseResult] --> LookupPhase[LINQ-Free Lookup Map]
-    LookupPhase --> TextWriter[TextWriter / StreamWriter]
-    TextWriter --> Output[Stream / String Output]
+    LookupPhase --> Utf8Writer[Utf8StreamWriter]
+    Utf8Writer --> Output[Stream / String Output]
 ```
 
 ### Step A: LINQ-Free Lookup Phase
-Before serialization, relationships (such as events grouped by person, or media linked to entities) are mapped. This mapping is performed using single-pass loops to populate dictionaries, avoiding the overhead of `GroupBy`, `SelectMany`, and lambda delegates.
+Before serialization, relationships (such as events grouped by person, or media linked to entities) are mapped using single-pass loops to populate lookup dictionaries, avoiding the overhead of `GroupBy`, `SelectMany`, and lambda delegates.
 
-### Step B: Streaming Output
-* **Streaming Writers**: Serializes output directly to a `Stream` or `TextWriter` (using `StreamWriter` with UTF-8). This supports writing gigabyte-sized GEDCOM trees without loading a single massive string into RAM.
-* **Interpolation-Free Writes**: Rather than allocating interpolated string objects (like `$"0 {person.XrefId} INDI\n"`), the exporter writes raw tokens and fields sequentially into the stream buffer.
+### Step B: Direct UTF-8 `Utf8StreamWriter` Output
+* **Direct UTF-8 Formatting**: Formats constant tokens (`"0 "u8`, `" INDI\n"u8`, `"1 NAME "u8`) directly as static UTF-8 byte spans without text encoder overhead or string formatting allocations.
+* **Buffered Streaming**: Writes directly to target streams via a 64KB rented buffer (`ArrayPool<byte>`), reaching serialization speeds over **2.8 million individuals per second** (1.42 ms for 4,000 records).
 
 ---
 
@@ -101,11 +98,10 @@ graph TD
 * **Costs**: Modest transient memory allocations for builder class instantiations, which are garbage-collected immediately upon calling `.Build()`.
 
 ### Fluent Query & Mutation Context (`GedcomTreeContext`)
-* **How It Works**: Wraps the raw `GedcomParseResult` and builds indexed lookup dictionaries mapping cross-reference IDs (`XrefId`) to entities and relationships.
+* **How It Works**: Wraps raw `GedcomParseResult` and builds indexed lookup dictionaries mapping cross-reference IDs (`XrefId`) to entities and relationships.
 * **Benefits**: 
-  * **High Performance**: Traverses parent, child, and spouse relations in $O(1)$ constant time, bypassing the $O(N)$ list-scanning LINQ operations.
-  * **Incremental Mutability**: Exposes mutator methods (`AddPerson`, `UpdatePerson`, `DeletePerson`, `AddFamily`, `DeleteFamily`) that update the lookup dictionaries and backing collections in $O(1)$ time, completely avoiding full $O(N)$ tree indexing recomputations.
+  * **High Performance**: Traverses parent, child, and spouse relations in $O(1)$ constant time, bypassing $O(N)$ list-scanning LINQ operations.
+  * **Incremental Mutability**: Exposes mutator methods (`AddPerson`, `UpdatePerson`, `DeletePerson`, `AddFamily`, `DeleteFamily`) that update lookup dictionaries and backing collections in $O(1)$ time, completely avoiding full $O(N)$ tree indexing recomputations.
 * **Costs**:
   * **Initialization**: Indices are built during instantiation, taking **1.19 ms** and allocating **1.15 MB** of memory for a 4,000-person tree (scales linearly $O(N)$).
-  * **Break-Even Point (CPU)**: In a 100-person tree, the context indexing pays off after **17 queries**. In a 4,000-person tree, it pays off after **82 queries**.
-  * **Break-Even Point (Memory)**: In a 100-person tree, the allocation overhead pays off after **74 queries**. In a 4,000-person tree, it pays off after **2,294 queries**.
+  * **Break-Even Point (CPU)**: In a 100-person tree, context indexing pays off after **17 queries**. In a 4,000-person tree, it pays off after **82 queries**.

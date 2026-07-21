@@ -1,6 +1,6 @@
 # Gedcom.Vector
 
-A high-performance, zero-dependency, low-allocation C# library for parsing, building, mutating, and exporting GEDCOM genealogy files.
+A lightening fast, high-performance, zero-dependency, low-allocation C# library for parsing, building, mutating, and exporting GEDCOM genealogy files.
 
 [![CI](https://github.com/tafallen/gedcom-vector/actions/workflows/ci.yml/badge.svg)](https://github.com/tafallen/gedcom-vector/actions/workflows/ci.yml)
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue.svg)](LICENSE)

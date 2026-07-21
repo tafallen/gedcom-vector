@@ -22,6 +22,7 @@ public class GedcomExportWriter : IGedcomExportWriter
         [FamTreeEventType.Residence] = "RESI",
         [FamTreeEventType.Christening] = "CHR",
         [FamTreeEventType.Burial] = "BURI",
+        [FamTreeEventType.Baptism] = "BAPM",
     };
 
     /// <inheritdoc />
@@ -221,6 +222,7 @@ public class GedcomExportWriter : IGedcomExportWriter
             for (int i = 0; i < events.Count; i++)
             {
                 var evt = events[i];
+                if (evt.EventType == FamTreeEventType.Birth || evt.EventType == FamTreeEventType.Death) continue;
                 if (TagByEventType.TryGetValue(evt.EventType, out var tagStr))
                 {
                     WriteDatedEventBlockStringTag(ref writer, tagStr, evt.Date, evt.Place);

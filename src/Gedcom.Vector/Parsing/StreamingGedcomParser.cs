@@ -362,10 +362,12 @@ internal static class StreamingGedcomParser
                     else if (tagSpan.SequenceEqual("BIRT"))
                     {
                         activeSubTag = SubTag.Birth;
+                        result.Events.Add(new EventRecord(currentXref!, FamTreeEventType.Birth, null, null));
                     }
                     else if (tagSpan.SequenceEqual("DEAT"))
                     {
                         activeSubTag = SubTag.Death;
+                        result.Events.Add(new EventRecord(currentXref!, FamTreeEventType.Death, null, null));
                     }
                     else if (tagSpan.SequenceEqual("OBJE"))
                     {
@@ -389,10 +391,14 @@ internal static class StreamingGedcomParser
                         var dateVal = pool.GetOrAdd(valueSpan);
                         if (activeSubTag == SubTag.Birth) personBirthDate = dateVal;
                         else if (activeSubTag == SubTag.Death) personDeathDate = dateVal;
-                        else if (activeSubTag == SubTag.OtherEvent && result.Events.Count > 0)
+
+                        if (result.Events.Count > 0)
                         {
                             var lastEv = result.Events[result.Events.Count - 1];
-                            result.Events[result.Events.Count - 1] = lastEv with { Date = dateVal };
+                            if (lastEv.PersonXrefId == currentXref)
+                            {
+                                result.Events[result.Events.Count - 1] = lastEv with { Date = dateVal };
+                            }
                         }
                     }
                     else if (tagSpan.SequenceEqual("PLAC"))
@@ -410,10 +416,14 @@ internal static class StreamingGedcomParser
                             concBuilder = new StringBuilder(placeVal);
                             concTarget = ConcTarget.PersonDeathPlace;
                         }
-                        else if (activeSubTag == SubTag.OtherEvent && result.Events.Count > 0)
+
+                        if (result.Events.Count > 0)
                         {
                             var lastEv = result.Events[result.Events.Count - 1];
-                            result.Events[result.Events.Count - 1] = lastEv with { Place = placeVal };
+                            if (lastEv.PersonXrefId == currentXref)
+                            {
+                                result.Events[result.Events.Count - 1] = lastEv with { Place = placeVal };
+                            }
                         }
                     }
                 }
@@ -566,7 +576,8 @@ internal static class StreamingGedcomParser
         if (tag.SequenceEqual("IMMI")) { eventType = FamTreeEventType.Immigration; return true; }
         if (tag.SequenceEqual("EMIG")) { eventType = FamTreeEventType.Emigration; return true; }
         if (tag.SequenceEqual("RESI")) { eventType = FamTreeEventType.Residence; return true; }
-        if (tag.SequenceEqual("CHR") || tag.SequenceEqual("BAP")) { eventType = FamTreeEventType.Christening; return true; }
+        if (tag.SequenceEqual("CHR")) { eventType = FamTreeEventType.Christening; return true; }
+        if (tag.SequenceEqual("BAPM") || tag.SequenceEqual("BAP")) { eventType = FamTreeEventType.Baptism; return true; }
         if (tag.SequenceEqual("BURI")) { eventType = FamTreeEventType.Burial; return true; }
 
         eventType = FamTreeEventType.Birth;

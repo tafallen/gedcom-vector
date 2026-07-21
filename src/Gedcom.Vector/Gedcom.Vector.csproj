@@ -9,7 +9,7 @@
 
     <!-- NuGet Package Metadata -->
     <PackageId>Gedcom.Vector</PackageId>
-    <Version>1.3.0</Version>
+    <Version>1.2.3</Version>
     <Authors>Tim Allen</Authors>
     <Company>tafallen</Company>
     <Product>Gedcom.Vector</Product>

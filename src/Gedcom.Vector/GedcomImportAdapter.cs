@@ -11,14 +11,22 @@ public class GedcomImportAdapter : IGedcomImportAdapter
     private readonly GedcomImportOptions _options;
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="GedcomImportAdapter"/> class with default settings.
+    /// </summary>
+    public GedcomImportAdapter()
+        : this(Microsoft.Extensions.Logging.Abstractions.NullLogger<GedcomImportAdapter>.Instance, Microsoft.Extensions.Options.Options.Create(new GedcomImportOptions()))
+    {
+    }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="GedcomImportAdapter"/> class.
     /// </summary>
     /// <param name="logger">The logger instance.</param>
     /// <param name="options">The configuration options.</param>
     public GedcomImportAdapter(ILogger<GedcomImportAdapter> logger, IOptions<GedcomImportOptions> options)
     {
-        _logger = logger;
-        _options = options.Value;
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<GedcomImportAdapter>.Instance;
+        _options = options?.Value ?? new GedcomImportOptions();
     }
 
     /// <inheritdoc />
@@ -56,5 +64,21 @@ public class GedcomImportAdapter : IGedcomImportAdapter
             result.Persons.Count, result.Families.Count, result.Events.Count, result.Media.Count);
 
         return result;
+    }
+
+    /// <inheritdoc />
+    public async Task<GedcomParseResult[]> ParseParallelAsync(IEnumerable<Stream> gedcomFiles, System.Threading.CancellationToken cancellationToken = default)
+    {
+        if (gedcomFiles == null) throw new ArgumentNullException(nameof(gedcomFiles));
+        var streamList = System.Linq.Enumerable.ToList(gedcomFiles);
+        var results = new GedcomParseResult[streamList.Count];
+
+        await System.Threading.Tasks.Parallel.ForAsync(0, streamList.Count, cancellationToken, (i, ct) =>
+        {
+            results[i] = Parse(streamList[i]);
+            return System.Threading.Tasks.ValueTask.CompletedTask;
+        }).ConfigureAwait(false);
+
+        return results;
     }
 }

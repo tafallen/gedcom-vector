@@ -67,6 +67,27 @@ public class GedcomExportWriter : IGedcomExportWriter
         await ms.CopyToAsync(output, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <inheritdoc />
+    public string Write(GedcomTreeContext context)
+    {
+        if (context == null) throw new ArgumentNullException(nameof(context));
+        return Write(context.BackingResult);
+    }
+
+    /// <inheritdoc />
+    public void Write(GedcomTreeContext context, Stream output)
+    {
+        if (context == null) throw new ArgumentNullException(nameof(context));
+        Write(context.BackingResult, output);
+    }
+
+    /// <inheritdoc />
+    public Task WriteAsync(GedcomTreeContext context, Stream output, CancellationToken cancellationToken = default)
+    {
+        if (context == null) throw new ArgumentNullException(nameof(context));
+        return WriteAsync(context.BackingResult, output, cancellationToken);
+    }
+
     private static void WriteInternal(ref Utf8StreamWriter writer, GedcomParseResult parseResult)
     {
         var eventsByPersonXref = new Dictionary<string, List<EventRecord>>(StringComparer.Ordinal);

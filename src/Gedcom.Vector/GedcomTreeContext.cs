@@ -19,6 +19,11 @@ public class GedcomTreeContext
     private readonly Dictionary<string, List<MediaReferenceRecord>> _mediaByEntityId;
 
     /// <summary>
+    /// Gets the backing <see cref="GedcomParseResult"/> instance.
+    /// </summary>
+    public GedcomParseResult BackingResult => _backingResult;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="GedcomTreeContext"/> class, indexing the tree.
     /// </summary>
     public GedcomTreeContext(GedcomParseResult result)

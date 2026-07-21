@@ -16,10 +16,11 @@ public class GedcomBranchCoverageTests
     public async Task GedcomExportWriter_NullChecks_And_BranchCoverage()
     {
         var writer = new GedcomExportWriter();
-        Assert.Throws<ArgumentNullException>(() => writer.Write(null!));
-        Assert.Throws<ArgumentNullException>(() => writer.Write(null!, new MemoryStream()));
+        Assert.Throws<ArgumentNullException>(() => writer.Write((GedcomParseResult)null!));
+        Assert.Throws<ArgumentNullException>(() => writer.Write((GedcomTreeContext)null!));
+        Assert.Throws<ArgumentNullException>(() => writer.Write((GedcomParseResult)null!, new MemoryStream()));
         Assert.Throws<ArgumentNullException>(() => writer.Write(new GedcomParseResult(), (Stream)null!));
-        await Assert.ThrowsAsync<ArgumentNullException>(() => writer.WriteAsync(null!, new MemoryStream()));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => writer.WriteAsync((GedcomParseResult)null!, new MemoryStream()));
         await Assert.ThrowsAsync<ArgumentNullException>(() => writer.WriteAsync(new GedcomParseResult(), null!));
 
         // Person with FirstName only (no LastName) and Unknown sex

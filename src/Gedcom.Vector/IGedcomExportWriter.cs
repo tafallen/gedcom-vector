@@ -31,4 +31,19 @@ public interface IGedcomExportWriter
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <returns>A task representing the asynchronous write operation.</returns>
     Task WriteAsync(GedcomParseResult parseResult, Stream output, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Serializes an indexed GEDCOM tree context directly to a string without re-indexing lookup tables.
+    /// </summary>
+    string Write(GedcomTreeContext context);
+
+    /// <summary>
+    /// Serializes an indexed GEDCOM tree context directly to an output stream without re-indexing lookup tables.
+    /// </summary>
+    void Write(GedcomTreeContext context, Stream output);
+
+    /// <summary>
+    /// Asynchronously serializes an indexed GEDCOM tree context directly to an output stream without re-indexing lookup tables.
+    /// </summary>
+    Task WriteAsync(GedcomTreeContext context, Stream output, CancellationToken cancellationToken = default);
 }

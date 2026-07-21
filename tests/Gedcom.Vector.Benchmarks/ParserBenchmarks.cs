@@ -95,6 +95,12 @@ public class ParserBenchmarks
     }
 
     [Benchmark]
+    public string MeasureExportingContext()
+    {
+        return _exportWriter.Write(_context);
+    }
+
+    [Benchmark]
     public List<PersonRecord> QueryChildrenLinq()
     {
         var targetId = _targetPerson.XrefId;

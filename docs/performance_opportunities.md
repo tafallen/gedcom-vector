@@ -58,11 +58,19 @@ While `Gedcom.Vector 1.2.1` achieves industry-leading performance (**4.49 ms par
 
 ---
 
-## 2. Priority & Impact Matrix
+## 3. Micro-Optimization Vectors (v1.3+ Horizon)
 
-| Opportunity | Target Area | Effort | Expected Speedup | Expected Memory Reduction | Priority |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| **Direct UTF-8 Byte Span Parser** | Import Pipeline | Medium | **+20% Faster Parsing** | -15% Allocations | High |
-| **Direct Context Serialization** | Export Pipeline | Low | **+18% Faster Exporting** | -30% Transient Allocations | High |
-| **Compact Micro-Collections** | Tree Context | Medium | **+25% Faster Indexing** | -30% Memory Footprint | Medium |
-| **Parallel Batch Import** | Batch Workloads | Low | **4x-8x Core Scaling** | 0% | Medium |
+### 3.1 Direct Array Event Tag Lookup (`TagByEventTypeArray`)
+* **Current Mechanism**: `GedcomExportWriter` uses a standard `Dictionary<FamTreeEventType, string>`.
+* **Micro-Optimization**: Replace dictionary lookups with a static 0-indexed array `TagByEventTypeArray[(int)evt.EventType]`.
+* **Expected Impact**: $O(1)$ direct array index lookup with zero hashing overhead during export serialization.
+
+### 3.2 Pooled CONC/CONT Continuation Buffers (`ValueStringBuilder`)
+* **Current Mechanism**: `StreamingGedcomParser` instantiates a `new StringBuilder()` whenever a `CONC` (continuation) or `CONT` tag occurs across line splits.
+* **Micro-Optimization**: Replace `StringBuilder` with a rented `ArrayPool<char>` buffer writer that grows dynamically without heap allocation.
+* **Expected Impact**: Eliminates GC allocations when parsing long notes, multi-line biographies, and address fields.
+
+### 3.3 Zero-Allocation Stateful ANSEL / ANSI Decoders (`AnselDecoder`)
+* **Current Mechanism**: `AnselDecoder` decodes non-UTF-8 character encodings (ANSEL, ANSI/Windows-1252) into managed strings using intermediate byte/char array allocations.
+* **Micro-Optimization**: Utilize `ArrayPool<char>` rented buffers for stateful non-UTF-8 decoding.
+* **Expected Impact**: Zero intermediate allocations during non-UTF-8 legacy file imports.

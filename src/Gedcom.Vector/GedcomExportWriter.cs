@@ -12,18 +12,28 @@ namespace Gedcom.Vector;
 /// <inheritdoc />
 public class GedcomExportWriter : IGedcomExportWriter
 {
-    private static readonly Dictionary<FamTreeEventType, string> TagByEventType = new()
+    private static readonly string?[] TagByEventTypeArray = InitTagByEventTypeArray();
+
+    private static string?[] InitTagByEventTypeArray()
     {
-        [FamTreeEventType.Birth] = "BIRT",
-        [FamTreeEventType.Death] = "DEAT",
-        [FamTreeEventType.Census] = "CENS",
-        [FamTreeEventType.Immigration] = "IMMI",
-        [FamTreeEventType.Emigration] = "EMIG",
-        [FamTreeEventType.Residence] = "RESI",
-        [FamTreeEventType.Christening] = "CHR",
-        [FamTreeEventType.Burial] = "BURI",
-        [FamTreeEventType.Baptism] = "BAPM",
-    };
+        int maxIndex = 0;
+        foreach (FamTreeEventType ev in Enum.GetValues<FamTreeEventType>())
+        {
+            if ((int)ev > maxIndex) maxIndex = (int)ev;
+        }
+
+        var array = new string?[maxIndex + 1];
+        array[(int)FamTreeEventType.Birth] = "BIRT";
+        array[(int)FamTreeEventType.Death] = "DEAT";
+        array[(int)FamTreeEventType.Census] = "CENS";
+        array[(int)FamTreeEventType.Immigration] = "IMMI";
+        array[(int)FamTreeEventType.Emigration] = "EMIG";
+        array[(int)FamTreeEventType.Residence] = "RESI";
+        array[(int)FamTreeEventType.Christening] = "CHR";
+        array[(int)FamTreeEventType.Burial] = "BURI";
+        array[(int)FamTreeEventType.Baptism] = "BAPM";
+        return array;
+    }
 
     /// <inheritdoc />
     public string Write(GedcomParseResult parseResult)
@@ -244,9 +254,14 @@ public class GedcomExportWriter : IGedcomExportWriter
             {
                 var evt = events[i];
                 if (evt.EventType == FamTreeEventType.Birth || evt.EventType == FamTreeEventType.Death) continue;
-                if (TagByEventType.TryGetValue(evt.EventType, out var tagStr))
+                int idx = (int)evt.EventType;
+                if (idx >= 0 && idx < TagByEventTypeArray.Length)
                 {
-                    WriteDatedEventBlockStringTag(ref writer, tagStr, evt.Date, evt.Place);
+                    var tagStr = TagByEventTypeArray[idx];
+                    if (tagStr is not null)
+                    {
+                        WriteDatedEventBlockStringTag(ref writer, tagStr, evt.Date, evt.Place);
+                    }
                 }
             }
         }

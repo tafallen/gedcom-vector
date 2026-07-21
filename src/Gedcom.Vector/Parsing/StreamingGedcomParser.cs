@@ -290,8 +290,22 @@ internal static class StreamingGedcomParser
 
             if (tagSpan.SequenceEqual("CONC") || tagSpan.SequenceEqual("CONT"))
             {
-                if (concBuilder != null)
+                if (concTarget != ConcTarget.None)
                 {
+                    if (concBuilder == null)
+                    {
+                        string existing = concTarget switch
+                        {
+                            ConcTarget.PersonFirstName => personFirstName ?? string.Empty,
+                            ConcTarget.PersonLastName => personLastName ?? string.Empty,
+                            ConcTarget.PersonBirthPlace => personBirthPlace ?? string.Empty,
+                            ConcTarget.PersonDeathPlace => personDeathPlace ?? string.Empty,
+                            ConcTarget.FamMarriagePlace => famMarriagePlace ?? string.Empty,
+                            ConcTarget.MediaTitle => mediaTitle ?? string.Empty,
+                            _ => string.Empty
+                        };
+                        concBuilder = new StringBuilder(existing);
+                    }
                     if (tagSpan.SequenceEqual("CONT"))
                     {
                         concBuilder.Append('\n');
@@ -349,7 +363,7 @@ internal static class StreamingGedcomParser
                     if (tagSpan.SequenceEqual("NAME"))
                     {
                         ParseName(valueSpan, pool, out personFirstName, out personLastName);
-                        concBuilder = new StringBuilder(personLastName ?? personFirstName ?? string.Empty);
+                        concBuilder = null;
                         concTarget = personLastName != null ? ConcTarget.PersonLastName : ConcTarget.PersonFirstName;
                         activeSubTag = SubTag.None;
                     }
@@ -407,13 +421,13 @@ internal static class StreamingGedcomParser
                         if (activeSubTag == SubTag.Birth)
                         {
                             personBirthPlace = placeVal;
-                            concBuilder = new StringBuilder(placeVal);
+                            concBuilder = null;
                             concTarget = ConcTarget.PersonBirthPlace;
                         }
                         else if (activeSubTag == SubTag.Death)
                         {
                             personDeathPlace = placeVal;
-                            concBuilder = new StringBuilder(placeVal);
+                            concBuilder = null;
                             concTarget = ConcTarget.PersonDeathPlace;
                         }
 
@@ -467,7 +481,7 @@ internal static class StreamingGedcomParser
                     else if (tagSpan.SequenceEqual("PLAC") && activeSubTag == SubTag.Marriage)
                     {
                         famMarriagePlace = pool.GetOrAdd(valueSpan);
-                        concBuilder = new StringBuilder(famMarriagePlace);
+                        concBuilder = null;
                         concTarget = ConcTarget.FamMarriagePlace;
                     }
                 }
@@ -479,7 +493,7 @@ internal static class StreamingGedcomParser
                     if (tagSpan.SequenceEqual("TITL"))
                     {
                         mediaTitle = pool.GetOrAdd(valueSpan);
-                        concBuilder = new StringBuilder(mediaTitle ?? string.Empty);
+                        concBuilder = null;
                         concTarget = ConcTarget.MediaTitle;
                     }
                     else if (tagSpan.SequenceEqual("FILE")) mediaFilePath = pool.GetOrAdd(valueSpan);

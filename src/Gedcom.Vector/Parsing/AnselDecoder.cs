@@ -106,37 +106,27 @@ internal static class AnselDecoder
 
     public static string Decode(string latin1String)
     {
-        var builder = new StringBuilder(latin1String.Length);
-        var pendingMarks = new PendingMarks();
-
-        for (int i = 0; i < latin1String.Length; i++)
-        {
-            var c = latin1String[i];
-            var b = (byte)c;
-            var mark = CombiningMarksArray[b];
-            if (mark != '\0')
-            {
-                pendingMarks.Add(mark);
-                continue;
-            }
-
-            builder.Append(DecodeBaseByte(b));
-            if (pendingMarks.Count > 0)
-            {
-                pendingMarks.AppendTo(builder);
-            }
-        }
-
-        if (pendingMarks.Count > 0)
-        {
-            pendingMarks.AppendTo(builder);
-        }
-
-        return builder.ToString().Normalize(NormalizationForm.FormC);
+        if (latin1String == null) return string.Empty;
+        return Decode(latin1String.AsSpan());
     }
 
     public static string Decode(ReadOnlySpan<char> latin1Span)
     {
+        bool hasAnselSpecial = false;
+        for (int i = 0; i < latin1Span.Length; i++)
+        {
+            if (latin1Span[i] >= 0x80)
+            {
+                hasAnselSpecial = true;
+                break;
+            }
+        }
+
+        if (!hasAnselSpecial)
+        {
+            return latin1Span.ToString();
+        }
+
         var builder = new StringBuilder(latin1Span.Length);
         var pendingMarks = new PendingMarks();
 

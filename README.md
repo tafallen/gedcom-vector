@@ -2,6 +2,8 @@
 
 A lightening fast, .net 8, high-performance, zero-dependency, low-allocation C# library for parsing, building, mutating, and exporting GEDCOM 5.1.1 and 7.0 genealogy files. Probably the fastest and best gedcom library out there!
 
+Gedcom.Vector is the fastest, most efficient Gedcom library for .net available today. Anywhere. Benchmark it against it's competitors and see for yourself! 
+
 [![CI](https://github.com/tafallen/gedcom-vector/actions/workflows/ci.yml/badge.svg)](https://github.com/tafallen/gedcom-vector/actions/workflows/ci.yml)
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue.svg)](LICENSE)
 ![Target: .NET 8.0](https://img.shields.io/badge/.NET-8.0-purple.svg)

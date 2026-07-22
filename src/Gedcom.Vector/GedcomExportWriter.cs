@@ -175,8 +175,15 @@ public class GedcomExportWriter : IGedcomExportWriter
 
         writer.WriteUtf8("0 HEAD\n"u8);
         writer.WriteUtf8("1 GEDC\n"u8);
-        writer.WriteUtf8("2 VERS 5.5.1\n"u8);
-        writer.WriteUtf8("2 FORM LINEAGE-LINKED\n"u8);
+        if (parseResult.SpecVersion == GedcomSpecVersion.Gedcom70)
+        {
+            writer.WriteUtf8("2 VERS 7.0.0\n"u8);
+        }
+        else
+        {
+            writer.WriteUtf8("2 VERS 5.5.1\n"u8);
+            writer.WriteUtf8("2 FORM LINEAGE-LINKED\n"u8);
+        }
         writer.WriteUtf8("1 CHAR UTF-8\n"u8);
 
         var persons = parseResult.Persons;

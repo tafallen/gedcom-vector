@@ -8,6 +8,11 @@ namespace Gedcom.Vector;
 public class GedcomParseResult
 {
     /// <summary>
+    /// Gets or sets the GEDCOM specification version detected during parsing.
+    /// </summary>
+    public GedcomSpecVersion SpecVersion { get; set; } = GedcomSpecVersion.Gedcom551;
+
+    /// <summary>
     /// Gets the list of parsed individuals (INDI records).
     /// </summary>
     public List<PersonRecord> Persons { get; } = new();

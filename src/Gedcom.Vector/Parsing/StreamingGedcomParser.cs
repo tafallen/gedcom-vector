@@ -339,13 +339,33 @@ internal static class StreamingGedcomParser
                     currentRecordType = RecordType.Media;
                     currentXref = pool.GetOrAdd(xrefSpan);
                 }
-                else if (!tagSpan.SequenceEqual("HEAD") && !tagSpan.SequenceEqual("TRLR"))
+                else if (tagSpan.SequenceEqual("HEAD"))
+                {
+                    currentRecordType = RecordType.Header;
+                }
+                else if (!tagSpan.SequenceEqual("TRLR"))
                 {
                     currentRecordType = RecordType.Unparsed;
                     currentXref = xrefSpan.IsEmpty ? null : pool.GetOrAdd(xrefSpan);
                     unparsedTag = pool.GetOrAdd(tagSpan);
                     unparsedValue = valueSpan.IsEmpty ? null : valueSpan.ToString();
                     unparsedRawLines = new List<string>();
+                }
+                return;
+            }
+
+            if (currentRecordType == RecordType.Header)
+            {
+                if (level == 2 && tagSpan.SequenceEqual("VERS"))
+                {
+                    if (valueSpan.StartsWith("7.".AsSpan(), StringComparison.Ordinal))
+                    {
+                        result.SpecVersion = GedcomSpecVersion.Gedcom70;
+                        if (encodingResult.IsAnsel || encodingResult.Encoding != Encoding.UTF8)
+                        {
+                            result.Errors.Add("GEDCOM 7.0 requires UTF-8 encoding. Non-UTF-8 encoding detected.");
+                        }
+                    }
                 }
                 return;
             }
@@ -607,7 +627,7 @@ internal static class StreamingGedcomParser
         return new StreamReader(stream, encodingResult.Encoding ?? Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: -1, leaveOpen: true);
     }
 
-    private enum RecordType { None, Person, Family, Media, Unparsed, Other }
+    private enum RecordType { None, Header, Person, Family, Media, Unparsed, Other }
     private enum SubTag { None, Birth, Death, Marriage, OtherEvent }
     private enum ConcTarget { None, PersonFirstName, PersonLastName, PersonBirthPlace, PersonDeathPlace, FamMarriagePlace, MediaTitle }
 }

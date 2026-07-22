@@ -42,8 +42,8 @@ public class GedcomTreeContext
         // 2. Index families
         var families = result.Families;
         _familiesById = new Dictionary<string, FamilyRecord>(families.Count, StringComparer.Ordinal);
-        _familiesAsSpouse = new Dictionary<string, List<FamilyRecord>>(StringComparer.Ordinal);
-        _familiesAsChild = new Dictionary<string, FamilyRecord>(StringComparer.Ordinal);
+        _familiesAsSpouse = new Dictionary<string, List<FamilyRecord>>(persons.Count / 2, StringComparer.Ordinal);
+        _familiesAsChild = new Dictionary<string, FamilyRecord>(persons.Count, StringComparer.Ordinal);
         _childrenByFamilyId = new Dictionary<string, List<PersonRecord>>(families.Count, StringComparer.Ordinal);
 
         for (int i = 0; i < families.Count; i++)

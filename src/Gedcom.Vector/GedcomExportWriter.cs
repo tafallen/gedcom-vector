@@ -504,12 +504,23 @@ public class GedcomExportWriter : IGedcomExportWriter
         public void WriteString(string? str)
         {
             if (string.IsNullOrEmpty(str)) return;
-            int maxBytes = Encoding.UTF8.GetMaxByteCount(str.Length);
+            ReadOnlySpan<char> span = str.AsSpan();
+            if (_position + span.Length <= _buffer.Length && Ascii.IsValid(span))
+            {
+                for (int i = 0; i < span.Length; i++)
+                {
+                    _buffer[_position + i] = (byte)span[i];
+                }
+                _position += span.Length;
+                return;
+            }
+
+            int maxBytes = Encoding.UTF8.GetMaxByteCount(span.Length);
             if (_position + maxBytes > _buffer.Length)
             {
                 Flush();
             }
-            int written = Encoding.UTF8.GetBytes(str.AsSpan(), _buffer.AsSpan(_position));
+            int written = Encoding.UTF8.GetBytes(span, _buffer.AsSpan(_position));
             _position += written;
         }
 

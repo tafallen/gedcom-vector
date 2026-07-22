@@ -81,11 +81,48 @@ public class ParserBenchmarks
         _context = _parsedResult.ToContext();
     }
 
-    [Benchmark]
-    public GedcomParseResult MeasureParsing()
+    [Benchmark(Baseline = true)]
+    public GedcomParseResult MeasureParsing_GedcomVector()
     {
         using var stream = new MemoryStream(_gedcomBytes);
         return _importAdapter.Parse(stream);
+    }
+
+    [Benchmark]
+    public object MeasureParsing_GedcomNetSDK()
+    {
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllBytes(tempFile, _gedcomBytes);
+        try
+        {
+            using var parser = new Patagames.GedcomNetSdk.Parser(tempFile);
+            var trans = new Patagames.GedcomNetSdk.GedcomTransmission();
+            trans.Deserialize(parser);
+            return trans;
+        }
+        finally
+        {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
+
+    [Benchmark]
+    public object MeasureParsing_GeneGenie()
+    {
+        var parser = new GeneGenie.Gedcom.Parser.GedcomParser();
+        string text = Encoding.UTF8.GetString(_gedcomBytes);
+        parser.GedcomParse(text);
+        return parser;
+    }
+
+    [Benchmark]
+    public object MeasureParsing_FamilyTreeProject()
+    {
+        using var stream = new MemoryStream(_gedcomBytes);
+        using var reader = FamilyTreeProject.GEDCOM.IO.GEDCOMReader.Create(stream);
+        var doc = new FamilyTreeProject.GEDCOM.GEDCOMDocument();
+        doc.Load(reader);
+        return doc;
     }
 
     [Benchmark]

@@ -21,7 +21,7 @@ internal static class StreamingGedcomParser
     public static GedcomParseResult Parse(Stream stream, GedcomEncodingResult encodingResult, ILogger? logger = null)
     {
         var result = new GedcomParseResult();
-        var pool = new GedcomStringPool(1024);
+        var pool = new GedcomStringPool(4096);
         var mediaLinks = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         var mediaNodes = new List<(string XrefId, string? Title, string? FilePath, string? Format)>();
 

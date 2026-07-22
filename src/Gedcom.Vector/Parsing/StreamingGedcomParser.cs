@@ -538,7 +538,14 @@ internal static class StreamingGedcomParser
         int space1 = span.IndexOf(' ');
         if (space1 < 0) return false;
 
-        if (!int.TryParse(span.Slice(0, space1), out level)) return false;
+        if (space1 == 1 && (uint)(span[0] - '0') <= 9)
+        {
+            level = span[0] - '0';
+        }
+        else if (!int.TryParse(span.Slice(0, space1), out level))
+        {
+            return false;
+        }
 
         var rest = span.Slice(space1 + 1);
         if (rest.IsEmpty) return false;

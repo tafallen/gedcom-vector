@@ -9,11 +9,11 @@
 
     <!-- NuGet Package Metadata -->
     <PackageId>Gedcom.Vector</PackageId>
-    <Version>1.2.3</Version>
+    <Version>1.3.1</Version>
     <Authors>Tim Allen</Authors>
     <Company>tafallen</Company>
     <Product>Gedcom.Vector</Product>
-    <Description>A portable .NET 8 GEDCOM 5.5.1 parser, lexer, encoder, and serializer. Supports UTF-8, ANSI, ANSEL, and Unicode encodings. Zero external dependencies beyond Microsoft.Extensions abstractions.</Description>
+    <Description>A portable .NET 8 GEDCOM 5.5.1 and GEDCOM 7.0 parser, lexer, encoder, serializer, and GEDZIP (.gdz) container processor. Supports UTF-8, ANSI, ANSEL, and Unicode encodings with zero external dependencies.</Description>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/tafallen/gedcom-vector</PackageProjectUrl>
     <RepositoryUrl>https://github.com/tafallen/gedcom-vector</RepositoryUrl>

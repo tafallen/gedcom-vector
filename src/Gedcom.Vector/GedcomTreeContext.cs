@@ -133,20 +133,26 @@ public class GedcomTreeContext
     public IEnumerable<PersonRecord> ChildrenOf(PersonRecord person)
     {
         if (person == null) throw new ArgumentNullException(nameof(person));
-        if (_familiesAsSpouse.TryGetValue(person.XrefId, out var families))
+        if (!_familiesAsSpouse.TryGetValue(person.XrefId, out var families) || families.Count == 0)
         {
-            var children = new List<PersonRecord>();
-            for (int i = 0; i < families.Count; i++)
-            {
-                var fam = families[i];
-                if (_childrenByFamilyId.TryGetValue(fam.XrefId, out var list))
-                {
-                    children.AddRange(list);
-                }
-            }
-            return children;
+            return Array.Empty<PersonRecord>();
         }
-        return Array.Empty<PersonRecord>();
+
+        if (families.Count == 1)
+        {
+            return _childrenByFamilyId.TryGetValue(families[0].XrefId, out var list) ? list : Array.Empty<PersonRecord>();
+        }
+
+        var children = new List<PersonRecord>();
+        for (int i = 0; i < families.Count; i++)
+        {
+            var fam = families[i];
+            if (_childrenByFamilyId.TryGetValue(fam.XrefId, out var list))
+            {
+                children.AddRange(list);
+            }
+        }
+        return children;
     }
 
     /// <summary>
@@ -155,21 +161,22 @@ public class GedcomTreeContext
     public IEnumerable<PersonRecord> SpousesOf(PersonRecord person)
     {
         if (person == null) throw new ArgumentNullException(nameof(person));
-        if (_familiesAsSpouse.TryGetValue(person.XrefId, out var families))
+        if (!_familiesAsSpouse.TryGetValue(person.XrefId, out var families) || families.Count == 0)
         {
-            var spouses = new List<PersonRecord>();
-            for (int i = 0; i < families.Count; i++)
-            {
-                var fam = families[i];
-                string? spouseId = fam.HusbandXref == person.XrefId ? fam.WifeXref : fam.HusbandXref;
-                if (spouseId is not null && _personsById.TryGetValue(spouseId, out var spouse))
-                {
-                    spouses.Add(spouse);
-                }
-            }
-            return spouses;
+            return Array.Empty<PersonRecord>();
         }
-        return Array.Empty<PersonRecord>();
+
+        var spouses = new List<PersonRecord>(families.Count);
+        for (int i = 0; i < families.Count; i++)
+        {
+            var fam = families[i];
+            string? spouseId = fam.HusbandXref == person.XrefId ? fam.WifeXref : fam.HusbandXref;
+            if (spouseId is not null && _personsById.TryGetValue(spouseId, out var spouse))
+            {
+                spouses.Add(spouse);
+            }
+        }
+        return spouses;
     }
 
     /// <summary>

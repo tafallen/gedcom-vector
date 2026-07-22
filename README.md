@@ -11,11 +11,11 @@ A lightening fast, high-performance, zero-dependency, low-allocation C# library 
 
 ## 🚀 Key Capabilities
 
-| Core Engine | Fluent Relationship Context | Developer Experience |
+| Core Engine | Fluent Relationship Context | Specification & Formats |
 | :--- | :--- | :--- |
-| **SIMD Tokenizer**: .NET 8 `SearchValues<char>` line splitting. | **$O(1)$ Relationship Traversal**: 298x faster than LINQ scans. | **Fluent Builder (`GedcomBuilder`)**: Strongly-typed tree construction. |
-| **Single-Pass Parser**: Zero-allocation level-0 streaming reader. | **$O(1)$ Incremental Mutability**: Instant add, update, and delete. | **Encoding Auto-Detect**: UTF-8, UTF-16, ANSEL, ANSI (Windows-1252). |
-| **Direct UTF-8 Exporter**: Formats byte spans directly (>2.8M records/sec). | **Span String Pooling**: Deduplicates dates, places, and names. | **Zero Dependencies**: Portable, pure C# .NET 8 codebase. |
+| **SIMD Tokenizer**: .NET 8 `SearchValues<char>` line splitting. | **$O(1)$ Relationship Traversal**: 270x faster than LINQ scans. | **Dual Spec Support**: Full support for GEDCOM 5.5.1 and 7.0 / 7.0.x. |
+| **Single-Pass Parser**: Zero-allocation level-0 streaming reader. | **$O(1)$ Incremental Mutability**: Instant add, update, and delete. | **GEDZIP (.gdz) Support**: Read and write zip container archives. |
+| **Direct UTF-8 Exporter**: Formats byte spans directly (>2.8M records/sec). | **Span String Pooling**: Deduplicates dates, places, and names. | **Encoding Auto-Detect**: UTF-8, UTF-16, ANSEL, ANSI (Windows-1252). |
 
 ---
 
@@ -36,24 +36,49 @@ Import GEDCOM files directly into memory-optimized record structures (`GedcomPar
 ```csharp
 using Gedcom.Vector;
 
-// --- IMPORT ---
+// --- IMPORT (Automatic 5.5.1 & 7.0 Specification Detection) ---
 using var inputStream = File.OpenRead("family.ged");
 var importAdapter = new GedcomImportAdapter();
 GedcomParseResult result = importAdapter.Parse(inputStream);
 
+Console.WriteLine($"Specification Version: {result.SpecVersion}"); // Gedcom551 or Gedcom70
 Console.WriteLine($"Parsed {result.Persons.Count} individuals and {result.Families.Count} families.");
 
-// --- EXPORT ---
+// --- EXPORT (Specify Target Specification) ---
 var exportWriter = new GedcomExportWriter();
 
-// Export directly to file stream (Interpolation-free UTF-8 byte serialization)
-using var outputStream = File.Create("output.ged");
-exportWriter.Write(result, outputStream);
+// Export as GEDCOM 7.0 (Mandatory UTF-8, no CONC/CONT tags)
+result.SpecVersion = GedcomSpecVersion.Gedcom70;
+using var outputStream7 = File.Create("output_7_0.ged");
+exportWriter.Write(result, outputStream7);
+
+// Export as GEDCOM 5.5.1
+result.SpecVersion = GedcomSpecVersion.Gedcom551;
+using var outputStream5 = File.Create("output_5_5_1.ged");
+exportWriter.Write(result, outputStream5);
 ```
 
 ---
 
-### 3. $O(1)$ Relationship Navigation & Tree Mutation (`GedcomTreeContext`)
+### 3. GEDZIP Container Support (`.gdz`)
+
+`Gedcom.Vector` provides full native support for **GEDZIP (`.gdz`)** packages (zipped containers storing a `.ged` manifest along with bundled media files):
+
+```csharp
+using Gedcom.Vector.Gedzip;
+
+// 1. Parse a GEDZIP (.gdz) package
+using var gdzInput = File.OpenRead("family_tree.gdz");
+GedcomParseResult gdzResult = GedzipAdapter.ParseGedzip(gdzInput, importAdapter);
+
+// 2. Export to a GEDZIP (.gdz) package
+using var gdzOutput = File.Create("exported_tree.gdz");
+GedzipAdapter.CreateGedzip(gdzResult, exportWriter, gdzOutput);
+```
+
+---
+
+### 4. $O(1)$ Relationship Navigation & Tree Mutation (`GedcomTreeContext`)
 
 Navigating raw GEDCOM collections usually requires writing slow $O(N)$ LINQ queries. Wrapping the result in `GedcomTreeContext` indexes the tree upon instantiation, enabling **$O(1)$ constant-time relationship lookups** and **$O(1)$ incremental updates**:
 

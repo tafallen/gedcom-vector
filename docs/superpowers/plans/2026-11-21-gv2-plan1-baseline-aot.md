@@ -35,6 +35,13 @@ On `net10.0` with `IsAotCompatible=true`, the 1.3.2 library raises exactly two t
 4. **GEDZIP output determinism:** `CreateGedzip` currently stamps the zip entry with the current time, so two runs differ. AOT versus JIT comparison would fail spuriously and consumers cannot diff exports. Task 4 fixes it with a test.
 5. **Smoke app failure paths** (missing input file, unknown extension): both builds must exit with the same non-zero code and message, never an unhandled-exception crash that differs between AOT and JIT. Task 4 pins it.
 
+## Benchmarking cadence (user requirement: benchmarks at the start and throughout)
+
+- **Start point:** the full suite on unchanged 1.3.2 under .NET 8 (`docs/benchmarks/2026-11-21-start-1.3.2-net8.md`), taken before Task 1.
+- **After each task that touches build or runtime** (Tasks 1, 2, 4): rerun the Gedcom.Vector benchmarks with `tools/Run-Benchmarks.ps1` (Task 5 creates it; until then run BenchmarkDotNet directly) and append the result to `docs/benchmarks/history.md`. Nothing else runs on the machine during a benchmark run.
+- **Task 5:** the formal .NET 10 baseline that GV-07 is gated against.
+- Every later plan ends each task that touches parsing, model, writing or the context with a checkpoint row in `history.md`, and flags any row more than 10% slower than the baseline in its review.
+
 ---
 
 ### Task 1: Shared build settings, central packages and the .NET 10 retarget
@@ -113,12 +120,12 @@ Expected: `0 Warning(s)`, `0 Error(s)`; all existing tests pass (same count as o
 
 **Files:**
 - Create: `tests/Gedcom.Vector.AotSmoke/Gedcom.Vector.AotSmoke.csproj`, `tests/Gedcom.Vector.AotSmoke/Program.cs`, `tests/corpus/smoke/ansel-551.ged`, `tests/corpus/smoke/ansi-551.ged`, `tests/corpus/smoke/utf16le-551.ged`, `tests/corpus/smoke/utf8-70.ged`, `tests/corpus/smoke/sample-70.gdz`, `tests/corpus/smoke/README.md`, `tools/Compare-AotJit.ps1`
-- Modify: `src/Gedcom.Vector/Gedzip/GedzipAdapter.cs`, `Gedcom.Vector.sln`, `.github/workflows/ci.yml`, `.gitignore`
+- Modify: `src/Gedcom.Vector/Gedzip/GedzipAdapter.cs`, `Gedcom.Vector.sln`, `.github/workflows/ci.yml`, `.gitignore`, `.gitattributes` (create if absent)
 - Test: `tests/Gedcom.Vector.Tests/Gedcom70AndGedzipTests.cs`
 
 **Interfaces:**
 - Consumes: 1.3.2 public API (`GedcomImportAdapter`, `GedcomExportWriter`, `GedzipAdapter`, `GedcomParseResult`).
-- Produces: `Gedcom.Vector.AotSmoke <input> <output> [--target 5.5.1|7.0]`. Exit 0 on success, 2 on usage error, 3 on unreadable input, 4 on unknown extension; messages to stderr. On success writes the export to `<output>` (`.gdz` input produces `.gdz` output via `GedzipAdapter.CreateGedzip`) and a summary to stdout, one `key=value` per line in this order: `SpecVersion`, `Persons`, `Families`, `Events`, `Media`, `Unparsed`, `Errors`, then each error as `Error=<text>`. `tools/Compare-AotJit.ps1 -Rid <rid> [-Corpus <dir>...]` exits 0 only if every output file, summary and exit code matches between builds and the AOT publish logged no `IL` warnings. Plan 6 moves the app to the 2.0 model; Plan 7 adds the public corpus directory to its default inputs.
+- Produces: `Gedcom.Vector.AotSmoke <input> <output> [--target 5.5.1|7.0]`. Exit 0 on success, 2 on usage error, 3 on unreadable input, 4 on unknown extension; messages to stderr. On success writes the export to `<output>` (`.gdz` input produces `.gdz` output via `GedzipAdapter.CreateGedzip`) and a summary to stdout, one `key=value` per line in this order: `SpecVersion`, `Persons`, `Families`, `Events`, `Media`, `Unparsed`, `Errors`, then each error as `Error=<text>`. `tools/Compare-AotJit.ps1 -Rid <rid> [-Corpus <dir>...] [-Include <file name pattern>...]` exits 0 only if every output file, summary and exit code matches between builds and the AOT publish logged no `IL` warnings. Plan 6 moves the app to the 2.0 model; Plan 7 adds the public corpus directory to its default inputs.
 
 - [ ] **Step 1: Write the failing test** in `Gedcom70AndGedzipTests.cs`
 
@@ -156,8 +163,10 @@ Expected: every line `match`, exit code 0, no `IL` warnings. Then once, locally 
 ### Task 5: Benchmark baseline on .NET 10
 
 **Files:**
-- Create: `docs/benchmarks/2026-11-21-baseline-1.3.2-net10.md`
-- Modify: `tests/Gedcom.Vector.Benchmarks/*` only if BenchmarkDotNet 0.15 requires API changes
+- Create: `docs/benchmarks/2026-11-21-baseline-1.3.2-net10.md`, `tools/Run-Benchmarks.ps1`
+- Modify: `docs/benchmarks/history.md`, `tests/Gedcom.Vector.Benchmarks/*` only if BenchmarkDotNet 0.15 requires API changes
+
+`tools/Run-Benchmarks.ps1 [-Label <text>] [-All]`: runs the Gedcom.Vector benchmarks (all benchmarks with `-All`), then appends one row per benchmark to `docs/benchmarks/history.md` (date, commit, label, mean, allocated, percent change versus the Task 5 baseline) and prints any row over +10%.
 
 **Interfaces:**
 - Produces: the GV-07 baseline Plan 8 compares against: mean, error, standard deviation and allocation for `MeasureParsing_GedcomVector`, `MeasureExporting`, `MeasureExportingContext`, `QueryChildrenLinq`, `QueryChildrenFluent`, `CreateTreeContext`, plus machine, OS, SDK and runtime lines from the BenchmarkDotNet header. Competitor rows recorded for context only.

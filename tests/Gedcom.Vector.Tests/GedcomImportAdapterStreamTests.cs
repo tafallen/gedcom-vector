@@ -9,7 +9,7 @@ namespace Gedcom.Vector.Tests.Gedcom;
 public class GedcomImportAdapterStreamTests
 {
     [Fact]
-    public void Parse_NullStream_ThrowsArgumentNullException()
+    public void ParseNullStreamThrowsArgumentNullException()
     {
         var options = Options.Create(new GedcomImportOptions { MaxFileSizeBytes = 1024 });
         var adapter = new GedcomImportAdapter(NullLogger<GedcomImportAdapter>.Instance, options);
@@ -18,7 +18,7 @@ public class GedcomImportAdapterStreamTests
     }
 
     [Fact]
-    public void Parse_NonSeekableStream_ThrowsArgumentException()
+    public void ParseNonSeekableStreamThrowsArgumentException()
     {
         var options = Options.Create(new GedcomImportOptions { MaxFileSizeBytes = 1024 });
         var adapter = new GedcomImportAdapter(NullLogger<GedcomImportAdapter>.Instance, options);

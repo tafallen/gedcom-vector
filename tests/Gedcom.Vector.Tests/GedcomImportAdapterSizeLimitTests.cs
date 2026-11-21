@@ -9,7 +9,7 @@ namespace Gedcom.Vector.Tests.Gedcom;
 public class GedcomImportAdapterSizeLimitTests
 {
     [Fact]
-    public void Parse_FileUnderMaxSize_ParsesNormally()
+    public void ParseFileUnderMaxSizeParsesNormally()
     {
         var options = Options.Create(new GedcomImportOptions { MaxFileSizeBytes = 1024 });
         var adapter = new GedcomImportAdapter(NullLogger<GedcomImportAdapter>.Instance, options);
@@ -22,7 +22,7 @@ public class GedcomImportAdapterSizeLimitTests
     }
 
     [Fact]
-    public void Parse_FileOverMaxSize_ReportsErrorWithoutThrowing()
+    public void ParseFileOverMaxSizeReportsErrorWithoutThrowing()
     {
         var options = Options.Create(new GedcomImportOptions { MaxFileSizeBytes = 10 });
         var adapter = new GedcomImportAdapter(NullLogger<GedcomImportAdapter>.Instance, options);

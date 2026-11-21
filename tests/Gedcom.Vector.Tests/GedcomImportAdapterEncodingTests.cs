@@ -21,7 +21,7 @@ public class GedcomImportAdapterEncodingTests
         new(NullLogger<GedcomImportAdapter>.Instance, Options.Create(new GedcomImportOptions()));
 
     [Fact]
-    public void Parse_Utf8WithBom_DecodesNameCorrectly()
+    public void ParseUtf8WithBomDecodesNameCorrectly()
     {
         var gedcom = "0 HEAD\n1 CHAR UTF-8\n0 @I1@ INDI\n1 NAME Renée /École/\n0 TRLR\n";
         var bytes = new byte[] { 0xEF, 0xBB, 0xBF }.Concat(Encoding.UTF8.GetBytes(gedcom)).ToArray();
@@ -34,7 +34,7 @@ public class GedcomImportAdapterEncodingTests
     }
 
     [Fact]
-    public void Parse_Utf16WithBom_DecodesNameCorrectly()
+    public void ParseUtf16WithBomDecodesNameCorrectly()
     {
         var gedcom = "0 HEAD\n1 CHAR UNICODE\n0 @I1@ INDI\n1 NAME Björn /Sørensen/\n0 TRLR\n";
         var bytes = new byte[] { 0xFF, 0xFE }.Concat(Encoding.Unicode.GetBytes(gedcom)).ToArray();
@@ -47,7 +47,7 @@ public class GedcomImportAdapterEncodingTests
     }
 
     [Fact]
-    public void Parse_DeclaredAnsel_DecodesCombiningDiacriticsCorrectly()
+    public void ParseDeclaredAnselDecodesCombiningDiacriticsCorrectly()
     {
         // "Muñoz" in ANSEL: M, u, [0xE4 tilde], n, o, z. "García" in ANSEL:
         // G, a, r, c, [0xE2 acute], i, a (the acute precedes the 'i' it modifies).
@@ -70,7 +70,7 @@ public class GedcomImportAdapterEncodingTests
     }
 
     [Fact]
-    public void Parse_DeclaredAnsi_DecodesWindows1252Correctly()
+    public void ParseDeclaredAnsiDecodesWindows1252Correctly()
     {
         var gedcom = "0 HEAD\n1 CHAR ANSI\n0 @I1@ INDI\n1 NAME François /Müller/\n0 TRLR\n";
         var bytes = Encoding.GetEncoding(1252).GetBytes(gedcom);
@@ -83,7 +83,7 @@ public class GedcomImportAdapterEncodingTests
     }
 
     [Fact]
-    public void Parse_NoCharTagDeclared_StillDefaultsToUtf8BackwardCompatibly()
+    public void ParseNoCharTagDeclaredStillDefaultsToUtf8BackwardCompatibly()
     {
         var gedcom = "0 HEAD\n0 @I1@ INDI\n1 NAME John /Doe/\n0 TRLR\n";
         var bytes = Encoding.UTF8.GetBytes(gedcom);

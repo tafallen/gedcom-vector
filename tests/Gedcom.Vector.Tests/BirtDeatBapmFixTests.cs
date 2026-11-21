@@ -11,7 +11,7 @@ namespace Gedcom.Vector.Tests;
 public class BirtDeatBapmFixTests
 {
     [Fact]
-    public void Bug1_Birth_And_Death_Events_Are_Added_To_Result_Events()
+    public void Bug1BirthAndDeathEventsAreAddedToResultEvents()
     {
         string gedContent =
             "0 HEAD\n" +
@@ -59,7 +59,7 @@ public class BirtDeatBapmFixTests
     }
 
     [Fact]
-    public void Bug2_BAPM_And_BAP_Tags_Map_To_Baptism_Event()
+    public void Bug2BAPMAndBAPTagsMapToBaptismEvent()
     {
         string gedContent =
             "0 HEAD\n" +

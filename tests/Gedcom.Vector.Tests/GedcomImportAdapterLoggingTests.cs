@@ -8,7 +8,7 @@ namespace Gedcom.Vector.Tests.Gedcom;
 public class GedcomImportAdapterLoggingTests
 {
     [Fact]
-    public void Parse_SuccessfulParse_LogsSummaryAtInformationLevel()
+    public void ParseSuccessfulParseLogsSummaryAtInformationLevel()
     {
         var logger = new CapturingLogger<GedcomImportAdapter>();
         var adapter = new GedcomImportAdapter(logger, Options.Create(new GedcomImportOptions()));
@@ -19,7 +19,7 @@ public class GedcomImportAdapterLoggingTests
     }
 
     [Fact]
-    public void Parse_EmptyInput_DoesNotLogSummary()
+    public void ParseEmptyInputDoesNotLogSummary()
     {
         var logger = new CapturingLogger<GedcomImportAdapter>();
         var adapter = new GedcomImportAdapter(logger, Options.Create(new GedcomImportOptions()));

@@ -13,7 +13,7 @@ namespace Gedcom.Vector.Tests;
 public class AdvancedPerformanceTests
 {
     [Fact]
-    public void Pillar1_DirectContextSerialization_Exports_Correctly()
+    public void Pillar1DirectContextSerializationExportsCorrectly()
     {
         var result = new GedcomBuilder()
             .AddPerson("@I1@", "John", "Doe", PersonSex.Male)
@@ -36,7 +36,7 @@ public class AdvancedPerformanceTests
     }
 
     [Fact]
-    public async Task Pillar3_ParallelBatchImport_Parses_Multiple_Streams_Concurrently()
+    public async Task Pillar3ParallelBatchImportParsesMultipleStreamsConcurrently()
     {
         string gedContent =
             "0 HEAD\n" +
@@ -61,7 +61,7 @@ public class AdvancedPerformanceTests
     }
 
     [Fact]
-    public void Pillar4_Utf8GedcomParser_Parses_Utf8_Streams()
+    public void Pillar4Utf8GedcomParserParsesUtf8Streams()
     {
         string gedContent =
             "0 HEAD\n" +

@@ -9,7 +9,7 @@ namespace Gedcom.Vector.Tests;
 public class GedcomMutableContextTests
 {
     [Fact]
-    public void AddPerson_AddsToIndexAndBackingResult()
+    public void AddPersonAddsToIndexAndBackingResult()
     {
         var result = new GedcomParseResult();
         var tree = result.ToContext();
@@ -23,7 +23,7 @@ public class GedcomMutableContextTests
     }
 
     [Fact]
-    public void UpdatePerson_UpdatesDetailsAndReferences()
+    public void UpdatePersonUpdatesDetailsAndReferences()
     {
         var result = new GedcomBuilder()
             .AddPerson("@I1@", "John", "Doe", PersonSex.Male)
@@ -55,7 +55,7 @@ public class GedcomMutableContextTests
     }
 
     [Fact]
-    public void DeletePerson_RemovesFromIndexesAndUnlinksSpouseAndChildren()
+    public void DeletePersonRemovesFromIndexesAndUnlinksSpouseAndChildren()
     {
         var result = new GedcomBuilder()
             .AddPerson("@I1@", "John", "Doe", PersonSex.Male)
@@ -91,7 +91,7 @@ public class GedcomMutableContextTests
     }
 
     [Fact]
-    public void AddFamily_HooksUpSpouseAndChildren()
+    public void AddFamilyHooksUpSpouseAndChildren()
     {
         var result = new GedcomBuilder()
             .AddPerson("@I1@", "John", "Doe", PersonSex.Male)
@@ -123,7 +123,7 @@ public class GedcomMutableContextTests
     }
 
     [Fact]
-    public void DeleteFamily_CleansUpAllReferences()
+    public void DeleteFamilyCleansUpAllReferences()
     {
         var result = new GedcomBuilder()
             .AddPerson("@I1@", "John", "Doe", PersonSex.Male)

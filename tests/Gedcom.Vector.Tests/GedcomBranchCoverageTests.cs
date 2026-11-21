@@ -13,7 +13,7 @@ namespace Gedcom.Vector.Tests;
 public class GedcomBranchCoverageTests
 {
     [Fact]
-    public async Task GedcomExportWriter_NullChecks_And_BranchCoverage()
+    public async Task GedcomExportWriterNullChecksAndBranchCoverage()
     {
         var writer = new GedcomExportWriter();
         Assert.Throws<ArgumentNullException>(() => writer.Write((GedcomParseResult)null!));
@@ -38,7 +38,7 @@ public class GedcomBranchCoverageTests
     }
 
     [Fact]
-    public void GedcomTreeContext_DeletionAndUnlinking_BranchCoverage()
+    public void GedcomTreeContextDeletionAndUnlinkingBranchCoverage()
     {
         var result = new GedcomBuilder()
             .AddPerson("@I1@", "Father", "Doe", PersonSex.Male)
@@ -70,7 +70,7 @@ public class GedcomBranchCoverageTests
     }
 
     [Fact]
-    public void StreamingGedcomParser_NameFormats_And_ContinutationBranches()
+    public void StreamingGedcomParserNameFormatsAndContinutationBranches()
     {
         // 1. Given name only, Surname only, Unknown sex
         string gedContent =
@@ -116,7 +116,7 @@ public class GedcomBranchCoverageTests
     }
 
     [Fact]
-    public void AnselDecoder_PendingMarksOverflow_BranchCoverage()
+    public void AnselDecoderPendingMarksOverflowBranchCoverage()
     {
         // Add 5 combining diacritics to test PendingMarks overflow list
         byte[] anselBytes = new byte[]
@@ -134,7 +134,7 @@ public class GedcomBranchCoverageTests
     }
 
     [Fact]
-    public void Builders_ValidationAndChaining_BranchCoverage()
+    public void BuildersValidationAndChainingBranchCoverage()
     {
         Assert.Throws<ArgumentNullException>(() => new PersonBuilder(null!, "@I1@", "John", "Doe", PersonSex.Male));
         Assert.Throws<ArgumentNullException>(() => new FamilyBuilder(null!, "@F1@", "@I1@", "@I2@"));
@@ -156,7 +156,7 @@ public class GedcomBranchCoverageTests
     }
 
     [Fact]
-    public void GedcomTreeContext_UnlinkedQueries_BranchCoverage()
+    public void GedcomTreeContextUnlinkedQueriesBranchCoverage()
     {
         var result = new GedcomBuilder()
             .AddPerson("@I1@", "Single", "Person")

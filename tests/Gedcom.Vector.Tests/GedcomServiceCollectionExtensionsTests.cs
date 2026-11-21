@@ -9,7 +9,7 @@ namespace Gedcom.Vector.Tests.Gedcom;
 public class GedcomServiceCollectionExtensionsTests
 {
     [Fact]
-    public void AddGedcomImport_RegistersAdapterAsSingleton()
+    public void AddGedcomImportRegistersAdapterAsSingleton()
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -24,7 +24,7 @@ public class GedcomServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddGedcomImport_BindsMaxFileSizeBytesFromConfiguration()
+    public void AddGedcomImportBindsMaxFileSizeBytesFromConfiguration()
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?> { ["GedcomImport:MaxFileSizeBytes"] = "12345" })
@@ -42,7 +42,7 @@ public class GedcomServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddGedcomImport_ZeroOrNegativeMaxFileSizeBytes_FailsValidationOnStart()
+    public void AddGedcomImportZeroOrNegativeMaxFileSizeBytesFailsValidationOnStart()
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?> { ["GedcomImport:MaxFileSizeBytes"] = "0" })

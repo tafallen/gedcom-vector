@@ -12,10 +12,10 @@ namespace Gedcom.Vector.Tests;
 
 public class GedcomFluentEdgeCaseTests
 {
-    private static readonly string[] ChildI3 = { "@I3@" };
+    private static string[] ChildI3() => new[] { "@I3@" };
 
     [Fact]
-    public void FamilyBuilder_EdgeCases_HandledCorrectly()
+    public void FamilyBuilderEdgeCasesHandledCorrectly()
     {
         var result = new GedcomBuilder()
             .AddFamily("@F1@", "@I1@", "@I2@")
@@ -38,7 +38,7 @@ public class GedcomFluentEdgeCaseTests
     }
 
     [Fact]
-    public void MediaBuilder_MimeTypeResolution_And_EdgeCases()
+    public void MediaBuilderMimeTypeResolutionAndEdgeCases()
     {
         var result = new GedcomBuilder()
             .AddMedia("@M1@", "Photo 1", "image.png", "png")
@@ -65,7 +65,7 @@ public class GedcomFluentEdgeCaseTests
     }
 
     [Fact]
-    public void PersonBuilder_EdgeCases_And_Events()
+    public void PersonBuilderEdgeCasesAndEvents()
     {
         var result = new GedcomBuilder()
             .AddPerson("@I1@", "John", "Doe", PersonSex.Male)
@@ -89,7 +89,7 @@ public class GedcomFluentEdgeCaseTests
     }
 
     [Fact]
-    public void GedcomTreeContext_ThrowsOnNullAndInvalidArguments()
+    public void GedcomTreeContextThrowsOnNullAndInvalidArguments()
     {
         Assert.Throws<ArgumentNullException>(() => new GedcomTreeContext(null!));
 
@@ -121,7 +121,7 @@ public class GedcomFluentEdgeCaseTests
     }
 
     [Fact]
-    public void GedcomTreeContext_DuplicateAdds_ThrowsArgumentException()
+    public void GedcomTreeContextDuplicateAddsThrowsArgumentException()
     {
         var result = new GedcomBuilder()
             .AddPerson("@I1@", "John", "Doe")
@@ -135,7 +135,7 @@ public class GedcomFluentEdgeCaseTests
     }
 
     [Fact]
-    public void StreamingGedcomParser_HandlesAllEventsAndMultilineContinuations()
+    public void StreamingGedcomParserHandlesAllEventsAndMultilineContinuations()
     {
         string gedcomContent =
             "0 HEAD\n" +
@@ -181,7 +181,7 @@ public class GedcomFluentEdgeCaseTests
     }
 
     [Fact]
-    public void GedcomStringPool_Resizing_And_NullHandling()
+    public void GedcomStringPoolResizingAndNullHandling()
     {
         var pool = new GedcomStringPool(capacity: 4);
 
@@ -203,7 +203,7 @@ public class GedcomFluentEdgeCaseTests
     }
 
     [Fact]
-    public async System.Threading.Tasks.Task ExportWriter_WriteAsync_And_MediaExport_Works()
+    public async System.Threading.Tasks.Task ExportWriterWriteAsyncAndMediaExportWorks()
     {
         var result = new GedcomBuilder()
             .AddPerson("@I1@", "John", "Doe", PersonSex.Male)
@@ -230,7 +230,7 @@ public class GedcomFluentEdgeCaseTests
     }
 
     [Fact]
-    public void GedcomTreeContext_FullMutationAndLookup_Coverage()
+    public void GedcomTreeContextFullMutationAndLookupCoverage()
     {
         var result = new GedcomBuilder()
             .AddPerson("@I1@", "Father", "Doe", PersonSex.Male)
@@ -264,7 +264,7 @@ public class GedcomFluentEdgeCaseTests
 
         // Test adding new person & family
         tree.AddPerson(new PersonRecord("@I4@", "New", "Person", PersonSex.Female, null, null, null, null));
-        tree.AddFamily(new FamilyRecord("@F2@", "@I1@", "@I4@", ChildI3, null, null));
+        tree.AddFamily(new FamilyRecord("@F2@", "@I1@", "@I4@", ChildI3(), null, null));
 
         Assert.NotNull(tree.GetPerson("@I4@"));
         Assert.NotNull(tree.GetFamily("@F2@"));
@@ -272,7 +272,7 @@ public class GedcomFluentEdgeCaseTests
     }
 
     [Fact]
-    public void StreamingGedcomParser_AnselAndUnhandledTags_Coverage()
+    public void StreamingGedcomParserAnselAndUnhandledTagsCoverage()
     {
         // 1. ANSEL input with diacritics via stream parser
         byte[] anselBytes = Encoding.Latin1.GetBytes("0 HEAD\n1 CHAR ANSEL\n0 @I1@ INDI\n1 NAME Mu\xE4" + "n" + "oz /Test/\n0 TRLR\n");
@@ -289,7 +289,7 @@ public class GedcomFluentEdgeCaseTests
     }
 
     [Fact]
-    public void GedcomTreeContext_MediaFor_Coverage()
+    public void GedcomTreeContextMediaForCoverage()
     {
         var result = new GedcomBuilder()
             .AddPerson("@I1@", "John", "Doe", PersonSex.Male)
@@ -305,7 +305,7 @@ public class GedcomFluentEdgeCaseTests
     }
 
     [Fact]
-    public void StreamingGedcomParser_MediaAndComplexFamily_Coverage()
+    public void StreamingGedcomParserMediaAndComplexFamilyCoverage()
     {
         string content =
             "0 HEAD\n" +
@@ -352,7 +352,7 @@ public class GedcomFluentEdgeCaseTests
     }
 
     [Fact]
-    public void AnselDecoder_MultipleCombiningMarks_Coverage()
+    public void AnselDecoderMultipleCombiningMarksCoverage()
     {
         // Decode string with multiple ANSEL combining marks
         string latin1String = "\xE1\xE2\xE8a"; // 3 combining marks before 'a'

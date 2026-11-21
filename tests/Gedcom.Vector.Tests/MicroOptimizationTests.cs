@@ -10,7 +10,7 @@ namespace Gedcom.Vector.Tests;
 public class MicroOptimizationTests
 {
     [Fact]
-    public void MicroOpt1_TagByEventTypeArray_Serializes_All_Event_Types()
+    public void MicroOpt1TagByEventTypeArraySerializesAllEventTypes()
     {
         var result = new GedcomParseResult();
         var p = new PersonRecord("@I1@", "John", "Doe", PersonSex.Male, null, null, null, null);
@@ -35,7 +35,7 @@ public class MicroOptimizationTests
     }
 
     [Fact]
-    public void MicroOpt2_LazyConcBuilder_Handles_CONC_And_CONT_Correctly()
+    public void MicroOpt2LazyConcBuilderHandlesCONCAndCONTCorrectly()
     {
         string gedContent =
             "0 HEAD\n" +
@@ -54,7 +54,7 @@ public class MicroOptimizationTests
     }
 
     [Fact]
-    public void MicroOpt3_AnselDecoder_FastPath_And_Special_Chars()
+    public void MicroOpt3AnselDecoderFastPathAndSpecialChars()
     {
         // Standard ASCII
         Assert.Equal("Hello World", AnselDecoder.Decode("Hello World"));

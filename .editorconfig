@@ -18,8 +18,3 @@ indent_size = 2
 
 [*.md]
 trim_trailing_whitespace = false
-
-# Test, benchmark and sample projects use Method_Scenario_Expectation naming (and benchmark
-# names are part of recorded baseline results), so CA1707 does not apply there.
-[{tests,samples}/**.cs]
-dotnet_diagnostic.CA1707.severity = none

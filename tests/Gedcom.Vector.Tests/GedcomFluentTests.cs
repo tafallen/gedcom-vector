@@ -9,7 +9,7 @@ namespace Gedcom.Vector.Tests;
 public class GedcomFluentTests
 {
     [Fact]
-    public void Builder_ConstructsValidGedcomParseResult()
+    public void BuilderConstructsValidGedcomParseResult()
     {
         var result = new GedcomBuilder()
             .AddPerson("@I1@", "John", "Doe", PersonSex.Male)
@@ -61,7 +61,7 @@ public class GedcomFluentTests
     }
 
     [Fact]
-    public void TreeContext_QueriesRelationshipsCorrectly()
+    public void TreeContextQueriesRelationshipsCorrectly()
     {
         var result = new GedcomBuilder()
             .AddPerson("@I1@", "John", "Doe", PersonSex.Male)

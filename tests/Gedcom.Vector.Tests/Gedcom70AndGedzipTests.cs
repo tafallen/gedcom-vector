@@ -14,7 +14,7 @@ namespace Gedcom.Vector.Tests;
 public class Gedcom70AndGedzipTests
 {
     [Fact]
-    public void Parse_Gedcom70_Header_Sets_SpecVersion_To_Gedcom70()
+    public void ParseGedcom70HeaderSetsSpecVersionToGedcom70()
     {
         string gedContent =
             "0 HEAD\n" +
@@ -34,7 +34,7 @@ public class Gedcom70AndGedzipTests
     }
 
     [Fact]
-    public void Parse_Gedcom70_NonUtf8_Adds_Error()
+    public void ParseGedcom70NonUtf8AddsError()
     {
         string gedContent =
             "0 HEAD\n" +
@@ -53,7 +53,7 @@ public class Gedcom70AndGedzipTests
     }
 
     [Fact]
-    public void Export_Gedcom70_Writes_70_Header()
+    public void ExportGedcom70Writes70Header()
     {
         var result = new GedcomParseResult
         {
@@ -69,7 +69,7 @@ public class Gedcom70AndGedzipTests
     }
 
     [Fact]
-    public void GedzipAdapter_Create_And_Parse_Gedzip_Archive()
+    public void GedzipAdapterCreateAndParseGedzipArchive()
     {
         var result = new GedcomParseResult
         {

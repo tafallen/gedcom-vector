@@ -12,7 +12,7 @@ namespace Gedcom.Vector.Tests;
 public class TechnicalDebtFixesTests
 {
     [Fact]
-    public void TD01_O1_MediaUnlinking_In_GedcomTreeContext_DeletePerson_And_DeleteFamily()
+    public void TD01O1MediaUnlinkingInGedcomTreeContextDeletePersonAndDeleteFamily()
     {
         var result = new GedcomBuilder()
             .AddPerson("@I1@", "Father", "Doe", PersonSex.Male)
@@ -44,7 +44,7 @@ public class TechnicalDebtFixesTests
     }
 
     [Fact]
-    public void TD02_GedcomStringPool_Clear_ResetsPool()
+    public void TD02GedcomStringPoolClearResetsPool()
     {
         var pool = new GedcomStringPool();
         string? s1 = pool.GetOrAdd("INDI");
@@ -63,7 +63,7 @@ public class TechnicalDebtFixesTests
     }
 
     [Fact]
-    public void TD03_TD04_Lossless_Unparsed_CustomRecords_RoundTrip()
+    public void TD03TD04LosslessUnparsedCustomRecordsRoundTrip()
     {
         string gedContent =
             "0 HEAD\n" +

@@ -7,7 +7,7 @@ namespace Gedcom.Vector.Tests.Gedcom;
 public class GedcomEncodingDetectorTests
 {
     [Fact]
-    public void Detect_Utf8Bom_ReturnsUtf8AndSkipsThreeBytes()
+    public void DetectUtf8BomReturnsUtf8AndSkipsThreeBytes()
     {
         var bytes = new byte[] { 0xEF, 0xBB, 0xBF }.Concat("0 HEAD\n"u8.ToArray()).ToArray();
 
@@ -20,7 +20,7 @@ public class GedcomEncodingDetectorTests
     }
 
     [Fact]
-    public void Detect_Utf16LittleEndianBom_ReturnsUtf16LittleEndian()
+    public void DetectUtf16LittleEndianBomReturnsUtf16LittleEndian()
     {
         var bytes = new byte[] { 0xFF, 0xFE }.Concat(Encoding.Unicode.GetBytes("0 HEAD\n")).ToArray();
 
@@ -33,7 +33,7 @@ public class GedcomEncodingDetectorTests
     }
 
     [Fact]
-    public void Detect_Utf16BigEndianBom_ReturnsUtf16BigEndian()
+    public void DetectUtf16BigEndianBomReturnsUtf16BigEndian()
     {
         var bytes = new byte[] { 0xFE, 0xFF }.Concat(Encoding.BigEndianUnicode.GetBytes("0 HEAD\n")).ToArray();
 
@@ -46,7 +46,7 @@ public class GedcomEncodingDetectorTests
     }
 
     [Fact]
-    public void Detect_NoBomCharUtf8_ReturnsUtf8WithNoPreamble()
+    public void DetectNoBomCharUtf8ReturnsUtf8WithNoPreamble()
     {
         var bytes = Encoding.UTF8.GetBytes("0 HEAD\n1 CHAR UTF-8\n0 TRLR\n");
 
@@ -59,7 +59,7 @@ public class GedcomEncodingDetectorTests
     }
 
     [Fact]
-    public void Detect_NoBomCharAnsel_ReturnsIsAnselTrue()
+    public void DetectNoBomCharAnselReturnsIsAnselTrue()
     {
         var bytes = Encoding.UTF8.GetBytes("0 HEAD\n1 CHAR ANSEL\n0 TRLR\n");
 
@@ -72,7 +72,7 @@ public class GedcomEncodingDetectorTests
     }
 
     [Fact]
-    public void Detect_NoBomCharAnsi_ReturnsWindows1252()
+    public void DetectNoBomCharAnsiReturnsWindows1252()
     {
         var bytes = Encoding.UTF8.GetBytes("0 HEAD\n1 CHAR ANSI\n0 TRLR\n");
 
@@ -84,7 +84,7 @@ public class GedcomEncodingDetectorTests
     }
 
     [Fact]
-    public void Detect_NoBomCharUnicode_ReturnsUtf16LittleEndian()
+    public void DetectNoBomCharUnicodeReturnsUtf16LittleEndian()
     {
         var bytes = Encoding.UTF8.GetBytes("0 HEAD\n1 CHAR UNICODE\n0 TRLR\n");
 
@@ -96,7 +96,7 @@ public class GedcomEncodingDetectorTests
     }
 
     [Fact]
-    public void Detect_NoCharTagAtAll_DefaultsToUtf8()
+    public void DetectNoCharTagAtAllDefaultsToUtf8()
     {
         var bytes = Encoding.UTF8.GetBytes("0 HEAD\n1 GEDC\n0 TRLR\n");
 
@@ -108,7 +108,7 @@ public class GedcomEncodingDetectorTests
     }
 
     [Fact]
-    public void Detect_UnrecognizedCharValue_DefaultsToUtf8()
+    public void DetectUnrecognizedCharValueDefaultsToUtf8()
     {
         var bytes = Encoding.UTF8.GetBytes("0 HEAD\n1 CHAR MADE_UP_ENCODING\n0 TRLR\n");
 
@@ -120,7 +120,7 @@ public class GedcomEncodingDetectorTests
     }
 
     [Fact]
-    public void Detect_NoBomCharLatin1_ReturnsLatin1()
+    public void DetectNoBomCharLatin1ReturnsLatin1()
     {
         var bytes = Encoding.UTF8.GetBytes("0 HEAD\n1 CHAR LATIN-1\n0 TRLR\n");
 
@@ -132,7 +132,7 @@ public class GedcomEncodingDetectorTests
     }
 
     [Fact]
-    public void Detect_NoBomCharIso88591_ReturnsLatin1()
+    public void DetectNoBomCharIso88591ReturnsLatin1()
     {
         var bytes = Encoding.UTF8.GetBytes("0 HEAD\n1 CHAR ISO-8859-1\n0 TRLR\n");
 

@@ -17,8 +17,8 @@ public static class GedzipAdapter
     /// </summary>
     public static GedcomParseResult ParseGedzip(Stream gedzipStream, IGedcomImportAdapter importAdapter)
     {
-        if (gedzipStream == null) throw new ArgumentNullException(nameof(gedzipStream));
-        if (importAdapter == null) throw new ArgumentNullException(nameof(importAdapter));
+        ArgumentNullException.ThrowIfNull(gedzipStream);
+        ArgumentNullException.ThrowIfNull(importAdapter);
 
         using var archive = new ZipArchive(gedzipStream, ZipArchiveMode.Read, leaveOpen: true);
         ZipArchiveEntry? gedEntry = null;
@@ -52,9 +52,9 @@ public static class GedzipAdapter
     /// </summary>
     public static void CreateGedzip(GedcomParseResult parseResult, IGedcomExportWriter exportWriter, Stream outputStream)
     {
-        if (parseResult == null) throw new ArgumentNullException(nameof(parseResult));
-        if (exportWriter == null) throw new ArgumentNullException(nameof(exportWriter));
-        if (outputStream == null) throw new ArgumentNullException(nameof(outputStream));
+        ArgumentNullException.ThrowIfNull(parseResult);
+        ArgumentNullException.ThrowIfNull(exportWriter);
+        ArgumentNullException.ThrowIfNull(outputStream);
 
         // Enforce 7.0 spec version for GEDZIP packages
         parseResult.SpecVersion = GedcomSpecVersion.Gedcom70;

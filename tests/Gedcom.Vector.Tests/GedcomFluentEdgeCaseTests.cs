@@ -12,6 +12,8 @@ namespace Gedcom.Vector.Tests;
 
 public class GedcomFluentEdgeCaseTests
 {
+    private static readonly string[] ChildI3 = { "@I3@" };
+
     [Fact]
     public void FamilyBuilder_EdgeCases_HandledCorrectly()
     {
@@ -262,7 +264,7 @@ public class GedcomFluentEdgeCaseTests
 
         // Test adding new person & family
         tree.AddPerson(new PersonRecord("@I4@", "New", "Person", PersonSex.Female, null, null, null, null));
-        tree.AddFamily(new FamilyRecord("@F2@", "@I1@", "@I4@", new[] { "@I3@" }, null, null));
+        tree.AddFamily(new FamilyRecord("@F2@", "@I1@", "@I4@", ChildI3, null, null));
 
         Assert.NotNull(tree.GetPerson("@I4@"));
         Assert.NotNull(tree.GetFamily("@F2@"));

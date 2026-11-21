@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 
 namespace Gedcom.Vector.Sample;
 
-class Program
+sealed class Program
 {
     static void Main(string[] args)
     {

@@ -20,7 +20,7 @@ public static class Utf8GedcomParser
     /// </summary>
     public static GedcomParseResult Parse(Stream stream, ILogger? logger = null)
     {
-        if (stream == null) throw new ArgumentNullException(nameof(stream));
+        ArgumentNullException.ThrowIfNull(stream);
 
         var result = new GedcomParseResult();
         var pool = new GedcomStringPool(4096);

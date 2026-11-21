@@ -114,7 +114,7 @@ public class GedcomTreeContext
     /// </summary>
     public PersonRecord? GetPerson(string xref)
     {
-        if (xref == null) throw new ArgumentNullException(nameof(xref));
+        ArgumentNullException.ThrowIfNull(xref);
         return _personsById.TryGetValue(xref, out var person) ? person : null;
     }
 
@@ -123,7 +123,7 @@ public class GedcomTreeContext
     /// </summary>
     public FamilyRecord? GetFamily(string xref)
     {
-        if (xref == null) throw new ArgumentNullException(nameof(xref));
+        ArgumentNullException.ThrowIfNull(xref);
         return _familiesById.TryGetValue(xref, out var family) ? family : null;
     }
 
@@ -132,7 +132,7 @@ public class GedcomTreeContext
     /// </summary>
     public IEnumerable<PersonRecord> ChildrenOf(PersonRecord person)
     {
-        if (person == null) throw new ArgumentNullException(nameof(person));
+        ArgumentNullException.ThrowIfNull(person);
         if (!_familiesAsSpouse.TryGetValue(person.XrefId, out var families) || families.Count == 0)
         {
             return Array.Empty<PersonRecord>();
@@ -160,7 +160,7 @@ public class GedcomTreeContext
     /// </summary>
     public IEnumerable<PersonRecord> SpousesOf(PersonRecord person)
     {
-        if (person == null) throw new ArgumentNullException(nameof(person));
+        ArgumentNullException.ThrowIfNull(person);
         if (!_familiesAsSpouse.TryGetValue(person.XrefId, out var families) || families.Count == 0)
         {
             return Array.Empty<PersonRecord>();
@@ -184,7 +184,7 @@ public class GedcomTreeContext
     /// </summary>
     public IEnumerable<PersonRecord> ParentsOf(PersonRecord person)
     {
-        if (person == null) throw new ArgumentNullException(nameof(person));
+        ArgumentNullException.ThrowIfNull(person);
         if (_familiesAsChild.TryGetValue(person.XrefId, out var fam))
         {
             var parents = new List<PersonRecord>(2);
@@ -206,7 +206,7 @@ public class GedcomTreeContext
     /// </summary>
     public IEnumerable<MediaReferenceRecord> MediaFor(string entityXref)
     {
-        if (entityXref == null) throw new ArgumentNullException(nameof(entityXref));
+        ArgumentNullException.ThrowIfNull(entityXref);
         return _mediaByEntityId.TryGetValue(entityXref, out var list) ? list : Array.Empty<MediaReferenceRecord>();
     }
 
@@ -216,7 +216,7 @@ public class GedcomTreeContext
     /// <param name="person">The person record to add.</param>
     public void AddPerson(PersonRecord person)
     {
-        if (person == null) throw new ArgumentNullException(nameof(person));
+        ArgumentNullException.ThrowIfNull(person);
         if (_personsById.ContainsKey(person.XrefId))
         {
             throw new ArgumentException($"Person with ID '{person.XrefId}' already exists.", nameof(person));
@@ -232,7 +232,7 @@ public class GedcomTreeContext
     /// <param name="person">The updated person record.</param>
     public void UpdatePerson(PersonRecord person)
     {
-        if (person == null) throw new ArgumentNullException(nameof(person));
+        ArgumentNullException.ThrowIfNull(person);
         if (!_personsById.TryGetValue(person.XrefId, out var existing))
         {
             throw new KeyNotFoundException($"Person with ID '{person.XrefId}' not found.");
@@ -270,7 +270,7 @@ public class GedcomTreeContext
     /// <param name="xref">The ID of the person to delete.</param>
     public void DeletePerson(string xref)
     {
-        if (xref == null) throw new ArgumentNullException(nameof(xref));
+        ArgumentNullException.ThrowIfNull(xref);
         if (!_personsById.TryGetValue(xref, out var person)) return;
 
         // 1. Remove from primary index and backing list
@@ -321,7 +321,7 @@ public class GedcomTreeContext
     /// <param name="family">The family record to add.</param>
     public void AddFamily(FamilyRecord family)
     {
-        if (family == null) throw new ArgumentNullException(nameof(family));
+        ArgumentNullException.ThrowIfNull(family);
         if (_familiesById.ContainsKey(family.XrefId))
         {
             throw new ArgumentException($"Family with ID '{family.XrefId}' already exists.", nameof(family));
@@ -374,7 +374,7 @@ public class GedcomTreeContext
     /// <param name="xref">The ID of the family to delete.</param>
     public void DeleteFamily(string xref)
     {
-        if (xref == null) throw new ArgumentNullException(nameof(xref));
+        ArgumentNullException.ThrowIfNull(xref);
         if (!_familiesById.TryGetValue(xref, out var family)) return;
 
         _familiesById.Remove(xref);

@@ -2,19 +2,15 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AleksejShherbak.FamilyTreeProject.GEDCOM" Version="1.2.2" />
-    <PackageReference Include="BenchmarkDotNet" Version="0.13.12" />
-    <PackageReference Include="Gedcom.Net.SDK" Version="1.0.8" />
-    <PackageReference Include="GeneGenie.Gedcom" Version="1.0.3" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />
+    <PackageReference Include="AleksejShherbak.FamilyTreeProject.GEDCOM" />
+    <PackageReference Include="BenchmarkDotNet" />
+    <PackageReference Include="Gedcom.Net.SDK" />
+    <PackageReference Include="GeneGenie.Gedcom" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
   </ItemGroup>
 
   <ItemGroup>

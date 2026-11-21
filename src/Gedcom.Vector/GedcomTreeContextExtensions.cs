@@ -14,7 +14,7 @@ public static class GedcomTreeContextExtensions
     /// <returns>A query-optimized <see cref="GedcomTreeContext"/>.</returns>
     public static GedcomTreeContext ToContext(this GedcomParseResult result)
     {
-        if (result == null) throw new ArgumentNullException(nameof(result));
+        ArgumentNullException.ThrowIfNull(result);
         return new GedcomTreeContext(result);
     }
 }

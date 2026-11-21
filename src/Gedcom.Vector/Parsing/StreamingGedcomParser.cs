@@ -625,7 +625,7 @@ internal static class StreamingGedcomParser
         return false;
     }
 
-    private static TextReader CreateReader(Stream stream, GedcomEncodingResult encodingResult)
+    private static StreamReader CreateReader(Stream stream, GedcomEncodingResult encodingResult)
     {
         if (encodingResult.IsAnsel)
         {

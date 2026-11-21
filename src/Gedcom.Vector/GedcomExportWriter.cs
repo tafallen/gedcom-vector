@@ -38,7 +38,7 @@ public class GedcomExportWriter : IGedcomExportWriter
     /// <inheritdoc />
     public string Write(GedcomParseResult parseResult)
     {
-        if (parseResult == null) throw new ArgumentNullException(nameof(parseResult));
+        ArgumentNullException.ThrowIfNull(parseResult);
 
         using var ms = new MemoryStream(4096);
         Write(parseResult, ms);
@@ -48,8 +48,8 @@ public class GedcomExportWriter : IGedcomExportWriter
     /// <inheritdoc />
     public void Write(GedcomParseResult parseResult, Stream output)
     {
-        if (parseResult == null) throw new ArgumentNullException(nameof(parseResult));
-        if (output == null) throw new ArgumentNullException(nameof(output));
+        ArgumentNullException.ThrowIfNull(parseResult);
+        ArgumentNullException.ThrowIfNull(output);
 
         byte[] rentBuffer = ArrayPool<byte>.Shared.Rent(65536);
         try
@@ -67,8 +67,8 @@ public class GedcomExportWriter : IGedcomExportWriter
     /// <inheritdoc />
     public async Task WriteAsync(GedcomParseResult parseResult, Stream output, CancellationToken cancellationToken = default)
     {
-        if (parseResult == null) throw new ArgumentNullException(nameof(parseResult));
-        if (output == null) throw new ArgumentNullException(nameof(output));
+        ArgumentNullException.ThrowIfNull(parseResult);
+        ArgumentNullException.ThrowIfNull(output);
 
         // MemoryStream serialization buffer for async writing to destination stream
         using var ms = new MemoryStream();
@@ -80,21 +80,21 @@ public class GedcomExportWriter : IGedcomExportWriter
     /// <inheritdoc />
     public string Write(GedcomTreeContext context)
     {
-        if (context == null) throw new ArgumentNullException(nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
         return Write(context.BackingResult);
     }
 
     /// <inheritdoc />
     public void Write(GedcomTreeContext context, Stream output)
     {
-        if (context == null) throw new ArgumentNullException(nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
         Write(context.BackingResult, output);
     }
 
     /// <inheritdoc />
     public Task WriteAsync(GedcomTreeContext context, Stream output, CancellationToken cancellationToken = default)
     {
-        if (context == null) throw new ArgumentNullException(nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
         return WriteAsync(context.BackingResult, output, cancellationToken);
     }
 
@@ -213,9 +213,9 @@ public class GedcomExportWriter : IGedcomExportWriter
 
     private static void WritePerson(
         ref Utf8StreamWriter writer, PersonRecord person,
-        IReadOnlyDictionary<string, List<EventRecord>> eventsByPersonXref,
-        IReadOnlyDictionary<string, List<string>> familiesAsChild,
-        IReadOnlyDictionary<string, List<string>> familiesAsSpouse,
+        Dictionary<string, List<EventRecord>> eventsByPersonXref,
+        Dictionary<string, List<string>> familiesAsChild,
+        Dictionary<string, List<string>> familiesAsSpouse,
         IReadOnlyDictionary<string, List<string>> mediaByLinkedXref)
     {
         writer.WriteUtf8("0 "u8);

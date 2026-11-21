@@ -33,8 +33,8 @@ public class ParserBenchmarks
         // Generate 4000 individuals
         for (int i = 1; i <= 4000; i++)
         {
-            sb.AppendLine($"0 @I{i}@ INDI");
-            sb.AppendLine($"1 NAME John{i} /Doe/");
+            sb.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"0 @I{i}@ INDI");
+            sb.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"1 NAME John{i} /Doe/");
             sb.AppendLine("2 GIVN John");
             sb.AppendLine("2 SURN Doe");
             sb.AppendLine("1 SEX M");
@@ -45,22 +45,22 @@ public class ParserBenchmarks
             // Individuals 1 to 2000 are spouses in families 1 to 1000
             if (i <= 2000)
             {
-                sb.AppendLine($"1 FAMS @F{(i + 1) / 2}@");
+                sb.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"1 FAMS @F{(i + 1) / 2}@");
             }
             // Individuals 2001 to 4000 are children in families 1 to 2000
             else
             {
-                sb.AppendLine($"1 FAMC @F{i - 2000}@");
+                sb.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"1 FAMC @F{i - 2000}@");
             }
         }
 
         // Generate 2000 families
         for (int i = 1; i <= 2000; i++)
         {
-            sb.AppendLine($"0 @F{i}@ FAM");
-            sb.AppendLine($"1 HUSB @I{i * 2 - 1}@");
-            sb.AppendLine($"1 WIFE @I{i * 2}@");
-            sb.AppendLine($"1 CHIL @I{i + 2000}@");
+            sb.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"0 @F{i}@ FAM");
+            sb.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"1 HUSB @I{i * 2 - 1}@");
+            sb.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"1 WIFE @I{i * 2}@");
+            sb.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"1 CHIL @I{i + 2000}@");
             sb.AppendLine("1 MARR");
             sb.AppendLine("2 DATE 1 JUN 1925");
         }

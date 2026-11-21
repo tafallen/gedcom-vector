@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 namespace Gedcom.Vector;
 
 /// <inheritdoc />
-public class GedcomImportAdapter : IGedcomImportAdapter
+public partial class GedcomImportAdapter : IGedcomImportAdapter
 {
     private readonly ILogger<GedcomImportAdapter> _logger;
     private readonly GedcomImportOptions _options;
@@ -32,10 +32,7 @@ public class GedcomImportAdapter : IGedcomImportAdapter
     /// <inheritdoc />
     public GedcomParseResult Parse(Stream gedcomFile)
     {
-        if (gedcomFile == null)
-        {
-            throw new ArgumentNullException(nameof(gedcomFile));
-        }
+        ArgumentNullException.ThrowIfNull(gedcomFile);
 
         if (!gedcomFile.CanSeek)
         {
@@ -59,9 +56,7 @@ public class GedcomImportAdapter : IGedcomImportAdapter
             return result;
         }
 
-        _logger.LogInformation(
-            "Parsed GEDCOM input: {PersonCount} persons, {FamilyCount} families, {EventCount} events, {MediaCount} media",
-            result.Persons.Count, result.Families.Count, result.Events.Count, result.Media.Count);
+        LogParsed(result.Persons.Count, result.Families.Count, result.Events.Count, result.Media.Count);
 
         return result;
     }
@@ -69,7 +64,7 @@ public class GedcomImportAdapter : IGedcomImportAdapter
     /// <inheritdoc />
     public async Task<GedcomParseResult[]> ParseParallelAsync(IEnumerable<Stream> gedcomFiles, System.Threading.CancellationToken cancellationToken = default)
     {
-        if (gedcomFiles == null) throw new ArgumentNullException(nameof(gedcomFiles));
+        ArgumentNullException.ThrowIfNull(gedcomFiles);
         var streamList = System.Linq.Enumerable.ToList(gedcomFiles);
         var results = new GedcomParseResult[streamList.Count];
 
@@ -81,4 +76,7 @@ public class GedcomImportAdapter : IGedcomImportAdapter
 
         return results;
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Parsed GEDCOM input: {PersonCount} persons, {FamilyCount} families, {EventCount} events, {MediaCount} media")]
+    private partial void LogParsed(int personCount, int familyCount, int eventCount, int mediaCount);
 }

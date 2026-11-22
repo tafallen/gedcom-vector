@@ -25,3 +25,6 @@ nupkgs/
 
 # BenchmarkDotNet artifacts
 BenchmarkDotNet.Artifacts/
+
+# AOT-versus-JIT comparison outputs
+artifacts/

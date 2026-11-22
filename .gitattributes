@@ -1,0 +1,2 @@
+# Corpus files are byte-exact test inputs; never normalise line endings or encodings
+tests/corpus/** binary

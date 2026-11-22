@@ -25,3 +25,33 @@ jobs:
 
       - name: Test
         run: dotnet test --no-build -c Release --logger trx
+
+  aot:
+    name: aot (${{ matrix.rid }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: windows-latest
+            rid: win-x64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Compare Native AOT and JIT output
+        shell: pwsh
+        run: ./tools/Compare-AotJit.ps1 -Rid ${{ matrix.rid }}
+
+      - name: Upload comparison artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aot-compare-${{ matrix.rid }}
+          path: artifacts/

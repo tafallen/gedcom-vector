@@ -1,0 +1,49 @@
+0 HEAD
+1 SOUR GVSMOKE
+2 NAME Gedcom.Vector smoke corpus
+1 GEDC
+2 VERS 5.5.1
+2 FORM LINEAGE-LINKED
+1 CHAR ANSEL
+0 @I1@ INDI
+1 NAME Renâee /Dupont/
+1 SEX M
+1 BIRT
+2 DATE 3 MAR 1921
+2 PLAC Paris
+1 FAMS @F1@
+0 @I2@ INDI
+1 NAME Helèue /Dupont/
+1 SEX F
+1 BIRT
+2 DATE 12 JUL 1924
+2 PLAC Lyon
+1 FAMS @F1@
+0 @I3@ INDI
+1 NAME Mèuller /Dupont/
+1 SEX M
+1 FAMC @F1@
+1 OBJE @M1@
+1 SOUR @S1@
+0 @I4@ INDI
+1 NAME ¢yvind /Dupont/
+1 SEX F
+1 FAMC @F1@
+0 @F1@ FAM
+1 HUSB @I1@
+1 WIFE @I2@
+1 CHIL @I3@
+1 CHIL @I4@
+1 MARR
+2 DATE 4 JUN 1948
+2 PLAC Paris
+0 @M1@ OBJE
+1 FILE photo.jpg
+2 FORM jpeg
+2 TITL Family portrait
+0 @S1@ SOUR
+1 TITL Fictional parish register
+1 AUTH Smoke Corpus Author
+0 _CUSTOM @X1@
+1 NOTE A custom level-0 record that must survive a round trip
+0 TRLR

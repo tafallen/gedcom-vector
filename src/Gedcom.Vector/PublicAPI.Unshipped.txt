@@ -1,2 +1,33 @@
 #nullable enable
 static Gedcom.Vector.GedcomServiceCollectionExtensions.AddGedcomImport(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Gedcom.Vector.GedcomImportOptions!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Gedcom.Vector.Diagnostics.GedcomDiagnostic
+Gedcom.Vector.Diagnostics.GedcomDiagnostic.Code.get -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
+Gedcom.Vector.Diagnostics.GedcomDiagnostic.GedcomDiagnostic(Gedcom.Vector.Diagnostics.GedcomDiagnosticCode code, Gedcom.Vector.Diagnostics.GedcomDiagnosticSeverity severity, string! message, int? line = null, string? recordXref = null, string? tagPath = null) -> void
+Gedcom.Vector.Diagnostics.GedcomDiagnostic.Line.get -> int?
+Gedcom.Vector.Diagnostics.GedcomDiagnostic.Message.get -> string!
+Gedcom.Vector.Diagnostics.GedcomDiagnostic.RecordXref.get -> string?
+Gedcom.Vector.Diagnostics.GedcomDiagnostic.Severity.get -> Gedcom.Vector.Diagnostics.GedcomDiagnosticSeverity
+Gedcom.Vector.Diagnostics.GedcomDiagnostic.TagPath.get -> string?
+Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
+Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.BlankLinesIgnored = 1001 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
+Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.LeadingWhitespace = 1002 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
+Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.LineWithoutLevel = 1003 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
+Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.LineWithoutLevelUnplaced = 1004 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
+Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.MissingTag = 1005 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
+Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.InvalidTag = 1006 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
+Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.MalformedXref = 1007 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
+Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.XrefOnSubstructure = 1008 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
+Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.LevelSkipped = 1009 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
+Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.ContinuationMisplaced = 1010 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
+Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.ContinuationAfterChildren = 1011 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
+Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.MissingHeader = 2001 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
+Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.UnknownVersion = 2002 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
+Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.NonUtf8Encoding = 2003 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
+Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.MissingTrailer = 2004 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
+Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.RecordAfterTrailer = 2005 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
+Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.DiagnosticsTruncated = 9001 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
+Gedcom.Vector.Diagnostics.GedcomDiagnosticSeverity
+Gedcom.Vector.Diagnostics.GedcomDiagnosticSeverity.Error = 2 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticSeverity
+Gedcom.Vector.Diagnostics.GedcomDiagnosticSeverity.Info = 0 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticSeverity
+Gedcom.Vector.Diagnostics.GedcomDiagnosticSeverity.Warning = 1 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticSeverity
+override Gedcom.Vector.Diagnostics.GedcomDiagnostic.ToString() -> string!

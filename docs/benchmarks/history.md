@@ -31,3 +31,9 @@ One row per benchmark per checkpoint, appended by `tools/Run-Benchmarks.ps1`. Th
 | 2026-11-22 | 08070d2 | Task 5: .NET 10 baseline (also post-Task-4 checkpoint) | QueryChildrenLinq | 7.469 us | 600 B | 0.0% |
 | 2026-11-22 | 08070d2 | Task 5: .NET 10 baseline (also post-Task-4 checkpoint) | QueryChildrenFluent | 22.63 ns | 64 B | 0.0% |
 | 2026-11-22 | 08070d2 | Task 5: .NET 10 baseline (also post-Task-4 checkpoint) | CreateTreeContext | 958.610 us | 1,039,830 B | 0.0% |
+| 2026-11-22 | 70917af | Plan 2 Task 4: shared line reader factory | MeasureParsingGedcomVector | 3.297 ms | 2,681,484 B | +1.3% |
+| 2026-11-22 | 70917af | Plan 2 Task 4: shared line reader factory | MeasureExporting | 2.454 ms | 4,792,566 B | +59.3% |
+| 2026-11-22 | 70917af | Plan 2 Task 4: shared line reader factory | MeasureExportingContext | 1.913 ms | 4,792,946 B | +30.4% |
+| 2026-11-22 | 70917af | Plan 2 Task 4: shared line reader factory | QueryChildrenLinq | 7.482 us | 600 B | +0.2% |
+| 2026-11-22 | 70917af | Plan 2 Task 4: shared line reader factory | QueryChildrenFluent | 24.86 ns | 64 B | +9.9% |
+| 2026-11-22 | 70917af | Plan 2 Task 4: shared line reader factory | CreateTreeContext | 1.235 ms | 1,039,935 B | +28.8% |

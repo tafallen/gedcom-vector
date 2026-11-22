@@ -162,7 +162,7 @@ internal static class StreamingGedcomParser
         char[] rentBuffer = ArrayPool<char>.Shared.Rent(bufferSize);
         try
         {
-            using var reader = CreateReader(stream, encodingResult);
+            using var reader = GedcomTextReaderFactory.Create(stream, encodingResult);
             int bufferCount = 0;
             int read;
 
@@ -623,15 +623,6 @@ internal static class StreamingGedcomParser
 
         eventType = FamTreeEventType.Birth;
         return false;
-    }
-
-    private static StreamReader CreateReader(Stream stream, GedcomEncodingResult encodingResult)
-    {
-        if (encodingResult.IsAnsel)
-        {
-            return new StreamReader(stream, Encoding.Latin1, detectEncodingFromByteOrderMarks: false, bufferSize: -1, leaveOpen: true);
-        }
-        return new StreamReader(stream, encodingResult.Encoding ?? Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: -1, leaveOpen: true);
     }
 
     private enum RecordType { None, Header, Person, Family, Media, Unparsed, Other }

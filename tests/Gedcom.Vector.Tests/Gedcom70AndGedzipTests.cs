@@ -94,4 +94,27 @@ public class Gedcom70AndGedzipTests
         Assert.Single(parsedResult.Persons);
         Assert.Equal("Gedzip", parsedResult.Persons[0].FirstName);
     }
+
+    [Fact]
+    public void CreateGedzipIsDeterministic()
+    {
+        static byte[] Build()
+        {
+            var result = new GedcomParseResult { SpecVersion = GedcomSpecVersion.Gedcom70 };
+            result.Persons.Add(new PersonRecord("@I1@", "Gedzip", "User", PersonSex.Male, null, null, null, null));
+
+            using var ms = new MemoryStream();
+            GedzipAdapter.CreateGedzip(result, new GedcomExportWriter(), ms);
+            return ms.ToArray();
+        }
+
+        byte[] first = Build();
+        byte[] second = Build();
+
+        Assert.Equal(first, second);
+
+        using var archive = new ZipArchive(new MemoryStream(first), ZipArchiveMode.Read);
+        var entry = Assert.Single(archive.Entries);
+        Assert.Equal(new DateTimeOffset(1980, 1, 1, 0, 0, 0, TimeSpan.Zero), entry.LastWriteTime);
+    }
 }

@@ -61,6 +61,8 @@ public static class GedzipAdapter
 
         using var archive = new ZipArchive(outputStream, ZipArchiveMode.Create, leaveOpen: true);
         var entry = archive.CreateEntry("tree.ged", CompressionLevel.Optimal);
+        // Fixed timestamp (earliest zip/DOS time) so identical input always yields identical bytes.
+        entry.LastWriteTime = new DateTimeOffset(1980, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
         using var entryStream = entry.Open();
         exportWriter.Write(parseResult, entryStream);

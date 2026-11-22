@@ -115,7 +115,14 @@ public class Gedcom70AndGedzipTests
 
         using var archive = new ZipArchive(new MemoryStream(first), ZipArchiveMode.Read);
         var entry = Assert.Single(archive.Entries);
-        Assert.Equal(new DateTimeOffset(1980, 1, 1, 0, 0, 0, TimeSpan.Zero), entry.LastWriteTime);
+        // Reading back converts DOS time to a local-offset value, so compare the wall-clock part only.
+        Assert.Equal(new DateTime(1980, 1, 1, 0, 0, 0), entry.LastWriteTime.DateTime);
+
+        // Zone-independent proof: the DOS time and date fields in the first local file header
+        // (offsets 10 and 12) must be 00:00:00 and 1980-01-01, whatever the machine's time zone.
+        Assert.Equal(0x04034B50u, BitConverter.ToUInt32(first, 0));
+        Assert.Equal((ushort)0x0000, BitConverter.ToUInt16(first, 10));
+        Assert.Equal((ushort)0x0021, BitConverter.ToUInt16(first, 12));
     }
 
     private const string MinimalGedcom70 =

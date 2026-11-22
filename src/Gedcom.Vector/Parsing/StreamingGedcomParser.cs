@@ -361,7 +361,7 @@ internal static class StreamingGedcomParser
                     if (valueSpan.StartsWith("7.".AsSpan(), StringComparison.Ordinal))
                     {
                         result.SpecVersion = GedcomSpecVersion.Gedcom70;
-                        if (encodingResult.IsAnsel || encodingResult.Encoding is not UTF8Encoding)
+                        if (encodingResult.IsAnsel || encodingResult.DeclaredUnrecognized || encodingResult.Encoding is not UTF8Encoding)
                         {
                             result.Errors.Add("GEDCOM 7.0 requires UTF-8 encoding. Non-UTF-8 encoding detected.");
                         }

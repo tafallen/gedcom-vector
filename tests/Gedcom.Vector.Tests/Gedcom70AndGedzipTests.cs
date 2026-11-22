@@ -164,4 +164,16 @@ public class Gedcom70AndGedzipTests
 
         Assert.Contains(result.Errors, e => e.Contains("GEDCOM 7.0 requires UTF-8", StringComparison.Ordinal));
     }
+
+    // An unrecognised CHAR value falls back to UTF-8 decoding, but the declaration itself is not UTF-8,
+    // so a 7.0 file carrying it must still be reported (found by the push security review, 2026-11-22).
+    [Fact]
+    public void ParseUnrecognisedCharGedcom70ReportsEncodingError()
+    {
+        string content = MinimalGedcom70.Replace("2 VERS 7.0\n", "2 VERS 7.0\n1 CHAR MACINTOSH\n", StringComparison.Ordinal);
+        using var ms = new MemoryStream(Encoding.Latin1.GetBytes(content));
+        var result = new GedcomImportAdapter().Parse(ms);
+
+        Assert.Contains(result.Errors, e => e.Contains("GEDCOM 7.0 requires UTF-8", StringComparison.Ordinal));
+    }
 }

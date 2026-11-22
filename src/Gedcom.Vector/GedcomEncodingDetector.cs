@@ -3,7 +3,9 @@ using System.Text.RegularExpressions;
 
 namespace Gedcom.Vector;
 
-internal readonly record struct GedcomEncodingResult(Encoding? Encoding, bool IsAnsel, int PreambleLength);
+// DeclaredUnrecognized: the header declares a CHAR value the detector does not know; decoding falls back to
+// UTF-8, but the declaration is not UTF-8, so version rules that require UTF-8 must still treat it as non-UTF-8.
+internal readonly record struct GedcomEncodingResult(Encoding? Encoding, bool IsAnsel, int PreambleLength, bool DeclaredUnrecognized = false);
 
 internal static class GedcomEncodingDetector
 {
@@ -60,7 +62,7 @@ internal static class GedcomEncodingDetector
             "ANSI" => new GedcomEncodingResult(Encoding.GetEncoding(1252), false, 0),
             "LATIN-1" or "ISO-8859-1" => new GedcomEncodingResult(Encoding.Latin1, false, 0),
             "ANSEL" => new GedcomEncodingResult(null, true, 0),
-            _ => DefaultToUtf8(),
+            _ => DefaultToUtf8() with { DeclaredUnrecognized = true },
         };
     }
 

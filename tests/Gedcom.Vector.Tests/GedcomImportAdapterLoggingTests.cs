@@ -16,6 +16,9 @@ public class GedcomImportAdapterLoggingTests
         adapter.Parse(GedcomTestData.ToStream("0 @I1@ INDI\n1 NAME John /Doe/\n"));
 
         Assert.Single(logger.Levels, LogLevel.Information);
+        Assert.Equal(
+            "Parsed GEDCOM input: 1 persons, 0 families, 0 events, 0 media",
+            Assert.Single(logger.Messages));
     }
 
     [Fact]
@@ -34,11 +37,16 @@ public class GedcomImportAdapterLoggingTests
     {
         public List<LogLevel> Levels { get; } = new();
 
+        public List<string> Messages { get; } = new();
+
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 
         public bool IsEnabled(LogLevel logLevel) => true;
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-            => Levels.Add(logLevel);
+        {
+            Levels.Add(logLevel);
+            Messages.Add(formatter(state, exception));
+        }
     }
 }

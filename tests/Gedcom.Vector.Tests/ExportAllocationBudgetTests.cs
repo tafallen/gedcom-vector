@@ -35,7 +35,7 @@ public class ExportAllocationBudgetTests
             $"Write allocated {allocated:N0} bytes for a {stringBytes:N0}-byte string ({(double)allocated / stringBytes:F2}x); budget is 1.5x.");
     }
 
-    // Same shape as ParserBenchmarks: 4000 individuals, 2000 families.
+    // Similar shape to ParserBenchmarks (4000 individuals, 2000 families).
     private static GedcomParseResult ParseBenchmarkShapedTree()
     {
         var sb = new StringBuilder();

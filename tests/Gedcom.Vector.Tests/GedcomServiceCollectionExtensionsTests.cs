@@ -102,6 +102,39 @@ public class GedcomServiceCollectionExtensionsTests
 
         Assert.Equal(42, options.MaxFileSizeBytes);
         Assert.Same(adapter1, adapter2);
+        Assert.Same(provider.GetRequiredService<IGedcomExportWriter>(), provider.GetRequiredService<IGedcomExportWriter>());
+    }
+
+    [Fact]
+    public void AddGedcomImportConfigurationNullServicesThrowsArgumentNullException()
+    {
+        IServiceCollection services = null!;
+
+        Assert.Throws<ArgumentNullException>(() => services.AddGedcomImport(new ConfigurationBuilder().Build()));
+    }
+
+    [Fact]
+    public void AddGedcomImportNullConfigurationThrowsArgumentNullException()
+    {
+        var services = new ServiceCollection();
+
+        Assert.Throws<ArgumentNullException>(() => services.AddGedcomImport((IConfiguration)null!));
+    }
+
+    [Fact]
+    public void AddGedcomImportActionNullServicesThrowsArgumentNullException()
+    {
+        IServiceCollection services = null!;
+
+        Assert.Throws<ArgumentNullException>(() => services.AddGedcomImport(o => o.MaxFileSizeBytes = 1));
+    }
+
+    [Fact]
+    public void AddGedcomImportNullConfigureThrowsArgumentNullException()
+    {
+        var services = new ServiceCollection();
+
+        Assert.Throws<ArgumentNullException>(() => services.AddGedcomImport((Action<GedcomImportOptions>)null!));
     }
 
     [Fact]

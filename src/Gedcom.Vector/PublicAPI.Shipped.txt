@@ -1,0 +1,238 @@
+#nullable enable
+const Gedcom.Vector.GedcomImportOptions.SectionName = "GedcomImport" -> string!
+Gedcom.Vector.Builder.FamilyBuilder
+Gedcom.Vector.Builder.FamilyBuilder.AddFamily(string! xrefId, string? husbandXref = null, string? wifeXref = null) -> Gedcom.Vector.Builder.FamilyBuilder!
+Gedcom.Vector.Builder.FamilyBuilder.AddMedia(string! xrefId, string? title = null, string? filePath = null, string? format = null) -> Gedcom.Vector.Builder.MediaBuilder!
+Gedcom.Vector.Builder.FamilyBuilder.AddPerson(string! xrefId, string? firstName = null, string? lastName = null, Gedcom.Vector.PersonSex sex = Gedcom.Vector.PersonSex.Unknown) -> Gedcom.Vector.Builder.PersonBuilder!
+Gedcom.Vector.Builder.FamilyBuilder.Build() -> Gedcom.Vector.GedcomParseResult!
+Gedcom.Vector.Builder.FamilyBuilder.WithChild(string! childXref) -> Gedcom.Vector.Builder.FamilyBuilder!
+Gedcom.Vector.Builder.FamilyBuilder.WithChildren(params string![]! childXrefs) -> Gedcom.Vector.Builder.FamilyBuilder!
+Gedcom.Vector.Builder.FamilyBuilder.WithMarriage(string? date, string? place = null) -> Gedcom.Vector.Builder.FamilyBuilder!
+Gedcom.Vector.Builder.GedcomBuilder
+Gedcom.Vector.Builder.GedcomBuilder.AddFamily(string! xrefId, string? husbandXref = null, string? wifeXref = null) -> Gedcom.Vector.Builder.FamilyBuilder!
+Gedcom.Vector.Builder.GedcomBuilder.AddMedia(string! xrefId, string? title = null, string? filePath = null, string? format = null) -> Gedcom.Vector.Builder.MediaBuilder!
+Gedcom.Vector.Builder.GedcomBuilder.AddPerson(string! xrefId, string? firstName = null, string? lastName = null, Gedcom.Vector.PersonSex sex = Gedcom.Vector.PersonSex.Unknown) -> Gedcom.Vector.Builder.PersonBuilder!
+Gedcom.Vector.Builder.GedcomBuilder.Build() -> Gedcom.Vector.GedcomParseResult!
+Gedcom.Vector.Builder.GedcomBuilder.GedcomBuilder() -> void
+Gedcom.Vector.Builder.MediaBuilder
+Gedcom.Vector.Builder.MediaBuilder.AddFamily(string! xrefId, string? husbandXref = null, string? wifeXref = null) -> Gedcom.Vector.Builder.FamilyBuilder!
+Gedcom.Vector.Builder.MediaBuilder.AddMedia(string! xrefId, string? title = null, string? filePath = null, string? format = null) -> Gedcom.Vector.Builder.MediaBuilder!
+Gedcom.Vector.Builder.MediaBuilder.AddPerson(string! xrefId, string? firstName = null, string? lastName = null, Gedcom.Vector.PersonSex sex = Gedcom.Vector.PersonSex.Unknown) -> Gedcom.Vector.Builder.PersonBuilder!
+Gedcom.Vector.Builder.MediaBuilder.Build() -> Gedcom.Vector.GedcomParseResult!
+Gedcom.Vector.Builder.MediaBuilder.LinkTo(string! entityXref) -> Gedcom.Vector.Builder.MediaBuilder!
+Gedcom.Vector.Builder.MediaBuilder.WithFilePath(string! filePath) -> Gedcom.Vector.Builder.MediaBuilder!
+Gedcom.Vector.Builder.MediaBuilder.WithFormat(string! format) -> Gedcom.Vector.Builder.MediaBuilder!
+Gedcom.Vector.Builder.MediaBuilder.WithTitle(string! title) -> Gedcom.Vector.Builder.MediaBuilder!
+Gedcom.Vector.Builder.PersonBuilder
+Gedcom.Vector.Builder.PersonBuilder.AddFamily(string! xrefId, string? husbandXref = null, string? wifeXref = null) -> Gedcom.Vector.Builder.FamilyBuilder!
+Gedcom.Vector.Builder.PersonBuilder.AddMedia(string! xrefId, string? title = null, string? filePath = null, string? format = null) -> Gedcom.Vector.Builder.MediaBuilder!
+Gedcom.Vector.Builder.PersonBuilder.AddPerson(string! xrefId, string? firstName = null, string? lastName = null, Gedcom.Vector.PersonSex sex = Gedcom.Vector.PersonSex.Unknown) -> Gedcom.Vector.Builder.PersonBuilder!
+Gedcom.Vector.Builder.PersonBuilder.Build() -> Gedcom.Vector.GedcomParseResult!
+Gedcom.Vector.Builder.PersonBuilder.WithBirth(string? date, string? place = null) -> Gedcom.Vector.Builder.PersonBuilder!
+Gedcom.Vector.Builder.PersonBuilder.WithDeath(string? date, string? place = null) -> Gedcom.Vector.Builder.PersonBuilder!
+Gedcom.Vector.Builder.PersonBuilder.WithEvent(Gedcom.Vector.FamTreeEventType eventType, string? date, string? place = null) -> Gedcom.Vector.Builder.PersonBuilder!
+Gedcom.Vector.Builder.PersonBuilder.WithSex(Gedcom.Vector.PersonSex sex) -> Gedcom.Vector.Builder.PersonBuilder!
+Gedcom.Vector.EventRecord
+Gedcom.Vector.EventRecord.Date.get -> string?
+Gedcom.Vector.EventRecord.Date.init -> void
+Gedcom.Vector.EventRecord.Deconstruct(out string! PersonXrefId, out Gedcom.Vector.FamTreeEventType EventType, out string? Date, out string? Place) -> void
+Gedcom.Vector.EventRecord.EventRecord(Gedcom.Vector.EventRecord! original) -> void
+Gedcom.Vector.EventRecord.EventRecord(string! PersonXrefId, Gedcom.Vector.FamTreeEventType EventType, string? Date, string? Place) -> void
+Gedcom.Vector.EventRecord.EventType.get -> Gedcom.Vector.FamTreeEventType
+Gedcom.Vector.EventRecord.EventType.init -> void
+Gedcom.Vector.EventRecord.PersonXrefId.get -> string!
+Gedcom.Vector.EventRecord.PersonXrefId.init -> void
+Gedcom.Vector.EventRecord.Place.get -> string?
+Gedcom.Vector.EventRecord.Place.init -> void
+Gedcom.Vector.FamilyRecord
+Gedcom.Vector.FamilyRecord.ChildXrefs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Gedcom.Vector.FamilyRecord.ChildXrefs.init -> void
+Gedcom.Vector.FamilyRecord.Deconstruct(out string! XrefId, out string? HusbandXref, out string? WifeXref, out System.Collections.Generic.IReadOnlyList<string!>! ChildXrefs, out string? MarriageDate, out string? MarriagePlace) -> void
+Gedcom.Vector.FamilyRecord.FamilyRecord(Gedcom.Vector.FamilyRecord! original) -> void
+Gedcom.Vector.FamilyRecord.FamilyRecord(string! XrefId, string? HusbandXref, string? WifeXref, System.Collections.Generic.IReadOnlyList<string!>! ChildXrefs, string? MarriageDate, string? MarriagePlace) -> void
+Gedcom.Vector.FamilyRecord.HusbandXref.get -> string?
+Gedcom.Vector.FamilyRecord.HusbandXref.init -> void
+Gedcom.Vector.FamilyRecord.MarriageDate.get -> string?
+Gedcom.Vector.FamilyRecord.MarriageDate.init -> void
+Gedcom.Vector.FamilyRecord.MarriagePlace.get -> string?
+Gedcom.Vector.FamilyRecord.MarriagePlace.init -> void
+Gedcom.Vector.FamilyRecord.WifeXref.get -> string?
+Gedcom.Vector.FamilyRecord.WifeXref.init -> void
+Gedcom.Vector.FamilyRecord.XrefId.get -> string!
+Gedcom.Vector.FamilyRecord.XrefId.init -> void
+Gedcom.Vector.FamTreeEventType
+Gedcom.Vector.FamTreeEventType.Baptism = 8 -> Gedcom.Vector.FamTreeEventType
+Gedcom.Vector.FamTreeEventType.Birth = 0 -> Gedcom.Vector.FamTreeEventType
+Gedcom.Vector.FamTreeEventType.Burial = 7 -> Gedcom.Vector.FamTreeEventType
+Gedcom.Vector.FamTreeEventType.Census = 2 -> Gedcom.Vector.FamTreeEventType
+Gedcom.Vector.FamTreeEventType.Christening = 6 -> Gedcom.Vector.FamTreeEventType
+Gedcom.Vector.FamTreeEventType.Death = 1 -> Gedcom.Vector.FamTreeEventType
+Gedcom.Vector.FamTreeEventType.Emigration = 4 -> Gedcom.Vector.FamTreeEventType
+Gedcom.Vector.FamTreeEventType.Immigration = 3 -> Gedcom.Vector.FamTreeEventType
+Gedcom.Vector.FamTreeEventType.Residence = 5 -> Gedcom.Vector.FamTreeEventType
+Gedcom.Vector.GedcomExportWriter
+Gedcom.Vector.GedcomExportWriter.GedcomExportWriter() -> void
+Gedcom.Vector.GedcomExportWriter.Write(Gedcom.Vector.GedcomParseResult! parseResult) -> string!
+Gedcom.Vector.GedcomExportWriter.Write(Gedcom.Vector.GedcomParseResult! parseResult, System.IO.Stream! output) -> void
+Gedcom.Vector.GedcomExportWriter.Write(Gedcom.Vector.GedcomTreeContext! context) -> string!
+Gedcom.Vector.GedcomExportWriter.Write(Gedcom.Vector.GedcomTreeContext! context, System.IO.Stream! output) -> void
+Gedcom.Vector.GedcomExportWriter.WriteAsync(Gedcom.Vector.GedcomParseResult! parseResult, System.IO.Stream! output, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Gedcom.Vector.GedcomExportWriter.WriteAsync(Gedcom.Vector.GedcomTreeContext! context, System.IO.Stream! output, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Gedcom.Vector.GedcomImportAdapter
+Gedcom.Vector.GedcomImportAdapter.GedcomImportAdapter() -> void
+Gedcom.Vector.GedcomImportAdapter.GedcomImportAdapter(Microsoft.Extensions.Logging.ILogger<Gedcom.Vector.GedcomImportAdapter!>! logger, Microsoft.Extensions.Options.IOptions<Gedcom.Vector.GedcomImportOptions!>! options) -> void
+Gedcom.Vector.GedcomImportAdapter.Parse(System.IO.Stream! gedcomFile) -> Gedcom.Vector.GedcomParseResult!
+Gedcom.Vector.GedcomImportAdapter.ParseParallelAsync(System.Collections.Generic.IEnumerable<System.IO.Stream!>! gedcomFiles, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Gedcom.Vector.GedcomParseResult![]!>!
+Gedcom.Vector.GedcomImportOptions
+Gedcom.Vector.GedcomImportOptions.GedcomImportOptions() -> void
+Gedcom.Vector.GedcomImportOptions.MaxFileSizeBytes.get -> long
+Gedcom.Vector.GedcomImportOptions.MaxFileSizeBytes.set -> void
+Gedcom.Vector.GedcomParseResult
+Gedcom.Vector.GedcomParseResult.Errors.get -> System.Collections.Generic.List<string!>!
+Gedcom.Vector.GedcomParseResult.Events.get -> System.Collections.Generic.List<Gedcom.Vector.EventRecord!>!
+Gedcom.Vector.GedcomParseResult.Families.get -> System.Collections.Generic.List<Gedcom.Vector.FamilyRecord!>!
+Gedcom.Vector.GedcomParseResult.GedcomParseResult() -> void
+Gedcom.Vector.GedcomParseResult.Media.get -> System.Collections.Generic.List<Gedcom.Vector.MediaReferenceRecord!>!
+Gedcom.Vector.GedcomParseResult.Persons.get -> System.Collections.Generic.List<Gedcom.Vector.PersonRecord!>!
+Gedcom.Vector.GedcomParseResult.SpecVersion.get -> Gedcom.Vector.GedcomSpecVersion
+Gedcom.Vector.GedcomParseResult.SpecVersion.set -> void
+Gedcom.Vector.GedcomParseResult.UnparsedRecords.get -> System.Collections.Generic.List<Gedcom.Vector.UnparsedRecord!>!
+Gedcom.Vector.GedcomServiceCollectionExtensions
+Gedcom.Vector.GedcomSpecVersion
+Gedcom.Vector.GedcomSpecVersion.Gedcom551 = 0 -> Gedcom.Vector.GedcomSpecVersion
+Gedcom.Vector.GedcomSpecVersion.Gedcom70 = 1 -> Gedcom.Vector.GedcomSpecVersion
+Gedcom.Vector.GedcomTreeContext
+Gedcom.Vector.GedcomTreeContext.AddFamily(Gedcom.Vector.FamilyRecord! family) -> void
+Gedcom.Vector.GedcomTreeContext.AddPerson(Gedcom.Vector.PersonRecord! person) -> void
+Gedcom.Vector.GedcomTreeContext.BackingResult.get -> Gedcom.Vector.GedcomParseResult!
+Gedcom.Vector.GedcomTreeContext.ChildrenOf(Gedcom.Vector.PersonRecord! person) -> System.Collections.Generic.IEnumerable<Gedcom.Vector.PersonRecord!>!
+Gedcom.Vector.GedcomTreeContext.DeleteFamily(string! xref) -> void
+Gedcom.Vector.GedcomTreeContext.DeletePerson(string! xref) -> void
+Gedcom.Vector.GedcomTreeContext.GedcomTreeContext(Gedcom.Vector.GedcomParseResult! result) -> void
+Gedcom.Vector.GedcomTreeContext.GetFamily(string! xref) -> Gedcom.Vector.FamilyRecord?
+Gedcom.Vector.GedcomTreeContext.GetPerson(string! xref) -> Gedcom.Vector.PersonRecord?
+Gedcom.Vector.GedcomTreeContext.MediaFor(string! entityXref) -> System.Collections.Generic.IEnumerable<Gedcom.Vector.MediaReferenceRecord!>!
+Gedcom.Vector.GedcomTreeContext.ParentsOf(Gedcom.Vector.PersonRecord! person) -> System.Collections.Generic.IEnumerable<Gedcom.Vector.PersonRecord!>!
+Gedcom.Vector.GedcomTreeContext.SpousesOf(Gedcom.Vector.PersonRecord! person) -> System.Collections.Generic.IEnumerable<Gedcom.Vector.PersonRecord!>!
+Gedcom.Vector.GedcomTreeContext.UpdatePerson(Gedcom.Vector.PersonRecord! person) -> void
+Gedcom.Vector.GedcomTreeContextExtensions
+Gedcom.Vector.Gedzip.GedzipAdapter
+Gedcom.Vector.IGedcomExportWriter
+Gedcom.Vector.IGedcomExportWriter.Write(Gedcom.Vector.GedcomParseResult! parseResult) -> string!
+Gedcom.Vector.IGedcomExportWriter.Write(Gedcom.Vector.GedcomParseResult! parseResult, System.IO.Stream! output) -> void
+Gedcom.Vector.IGedcomExportWriter.Write(Gedcom.Vector.GedcomTreeContext! context) -> string!
+Gedcom.Vector.IGedcomExportWriter.Write(Gedcom.Vector.GedcomTreeContext! context, System.IO.Stream! output) -> void
+Gedcom.Vector.IGedcomExportWriter.WriteAsync(Gedcom.Vector.GedcomParseResult! parseResult, System.IO.Stream! output, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Gedcom.Vector.IGedcomExportWriter.WriteAsync(Gedcom.Vector.GedcomTreeContext! context, System.IO.Stream! output, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Gedcom.Vector.IGedcomImportAdapter
+Gedcom.Vector.IGedcomImportAdapter.Parse(System.IO.Stream! gedcomFile) -> Gedcom.Vector.GedcomParseResult!
+Gedcom.Vector.IGedcomImportAdapter.ParseParallelAsync(System.Collections.Generic.IEnumerable<System.IO.Stream!>! gedcomFiles, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Gedcom.Vector.GedcomParseResult![]!>!
+Gedcom.Vector.MediaReferenceRecord
+Gedcom.Vector.MediaReferenceRecord.Deconstruct(out string! XrefId, out string? Title, out string? FilePath, out string? Format, out string? MimeType, out System.Collections.Generic.IReadOnlyList<string!>! LinkedXrefIds) -> void
+Gedcom.Vector.MediaReferenceRecord.FilePath.get -> string?
+Gedcom.Vector.MediaReferenceRecord.FilePath.init -> void
+Gedcom.Vector.MediaReferenceRecord.Format.get -> string?
+Gedcom.Vector.MediaReferenceRecord.Format.init -> void
+Gedcom.Vector.MediaReferenceRecord.LinkedXrefIds.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Gedcom.Vector.MediaReferenceRecord.LinkedXrefIds.init -> void
+Gedcom.Vector.MediaReferenceRecord.MediaReferenceRecord(Gedcom.Vector.MediaReferenceRecord! original) -> void
+Gedcom.Vector.MediaReferenceRecord.MediaReferenceRecord(string! XrefId, string? Title, string? FilePath, string? Format, string? MimeType, System.Collections.Generic.IReadOnlyList<string!>! LinkedXrefIds) -> void
+Gedcom.Vector.MediaReferenceRecord.MimeType.get -> string?
+Gedcom.Vector.MediaReferenceRecord.MimeType.init -> void
+Gedcom.Vector.MediaReferenceRecord.Title.get -> string?
+Gedcom.Vector.MediaReferenceRecord.Title.init -> void
+Gedcom.Vector.MediaReferenceRecord.XrefId.get -> string!
+Gedcom.Vector.MediaReferenceRecord.XrefId.init -> void
+Gedcom.Vector.Parsing.GedcomStringPool
+Gedcom.Vector.Parsing.GedcomStringPool.Clear() -> void
+Gedcom.Vector.Parsing.GedcomStringPool.Count.get -> int
+Gedcom.Vector.Parsing.GedcomStringPool.GedcomStringPool(int capacity = 256) -> void
+Gedcom.Vector.Parsing.GedcomStringPool.GetOrAdd(string? s) -> string?
+Gedcom.Vector.Parsing.GedcomStringPool.GetOrAdd(System.ReadOnlySpan<char> span) -> string!
+Gedcom.Vector.Parsing.Utf8GedcomParser
+Gedcom.Vector.PersonRecord
+Gedcom.Vector.PersonRecord.BirthDate.get -> string?
+Gedcom.Vector.PersonRecord.BirthDate.init -> void
+Gedcom.Vector.PersonRecord.BirthPlace.get -> string?
+Gedcom.Vector.PersonRecord.BirthPlace.init -> void
+Gedcom.Vector.PersonRecord.DeathDate.get -> string?
+Gedcom.Vector.PersonRecord.DeathDate.init -> void
+Gedcom.Vector.PersonRecord.DeathPlace.get -> string?
+Gedcom.Vector.PersonRecord.DeathPlace.init -> void
+Gedcom.Vector.PersonRecord.Deconstruct(out string! XrefId, out string? FirstName, out string? LastName, out Gedcom.Vector.PersonSex Sex, out string? BirthDate, out string? BirthPlace, out string? DeathDate, out string? DeathPlace) -> void
+Gedcom.Vector.PersonRecord.FirstName.get -> string?
+Gedcom.Vector.PersonRecord.FirstName.init -> void
+Gedcom.Vector.PersonRecord.LastName.get -> string?
+Gedcom.Vector.PersonRecord.LastName.init -> void
+Gedcom.Vector.PersonRecord.PersonRecord(Gedcom.Vector.PersonRecord! original) -> void
+Gedcom.Vector.PersonRecord.PersonRecord(string! XrefId, string? FirstName, string? LastName, Gedcom.Vector.PersonSex Sex, string? BirthDate, string? BirthPlace, string? DeathDate, string? DeathPlace) -> void
+Gedcom.Vector.PersonRecord.Sex.get -> Gedcom.Vector.PersonSex
+Gedcom.Vector.PersonRecord.Sex.init -> void
+Gedcom.Vector.PersonRecord.XrefId.get -> string!
+Gedcom.Vector.PersonRecord.XrefId.init -> void
+Gedcom.Vector.PersonSex
+Gedcom.Vector.PersonSex.Female = 2 -> Gedcom.Vector.PersonSex
+Gedcom.Vector.PersonSex.Male = 1 -> Gedcom.Vector.PersonSex
+Gedcom.Vector.PersonSex.Unknown = 0 -> Gedcom.Vector.PersonSex
+Gedcom.Vector.UnparsedRecord
+Gedcom.Vector.UnparsedRecord.Deconstruct(out string? XrefId, out string! Tag, out string? Value, out System.Collections.Generic.IReadOnlyList<string!>? RawLines) -> void
+Gedcom.Vector.UnparsedRecord.RawLines.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Gedcom.Vector.UnparsedRecord.RawLines.init -> void
+Gedcom.Vector.UnparsedRecord.Tag.get -> string!
+Gedcom.Vector.UnparsedRecord.Tag.init -> void
+Gedcom.Vector.UnparsedRecord.UnparsedRecord(Gedcom.Vector.UnparsedRecord! original) -> void
+Gedcom.Vector.UnparsedRecord.UnparsedRecord(string? XrefId, string! Tag, string? Value, System.Collections.Generic.IReadOnlyList<string!>? RawLines = null) -> void
+Gedcom.Vector.UnparsedRecord.Value.get -> string?
+Gedcom.Vector.UnparsedRecord.Value.init -> void
+Gedcom.Vector.UnparsedRecord.XrefId.get -> string?
+Gedcom.Vector.UnparsedRecord.XrefId.init -> void
+override Gedcom.Vector.EventRecord.Equals(object? obj) -> bool
+override Gedcom.Vector.EventRecord.GetHashCode() -> int
+override Gedcom.Vector.EventRecord.ToString() -> string!
+override Gedcom.Vector.FamilyRecord.Equals(object? obj) -> bool
+override Gedcom.Vector.FamilyRecord.GetHashCode() -> int
+override Gedcom.Vector.FamilyRecord.ToString() -> string!
+override Gedcom.Vector.MediaReferenceRecord.Equals(object? obj) -> bool
+override Gedcom.Vector.MediaReferenceRecord.GetHashCode() -> int
+override Gedcom.Vector.MediaReferenceRecord.ToString() -> string!
+override Gedcom.Vector.PersonRecord.Equals(object? obj) -> bool
+override Gedcom.Vector.PersonRecord.GetHashCode() -> int
+override Gedcom.Vector.PersonRecord.ToString() -> string!
+override Gedcom.Vector.UnparsedRecord.Equals(object? obj) -> bool
+override Gedcom.Vector.UnparsedRecord.GetHashCode() -> int
+override Gedcom.Vector.UnparsedRecord.ToString() -> string!
+static Gedcom.Vector.EventRecord.operator !=(Gedcom.Vector.EventRecord? left, Gedcom.Vector.EventRecord? right) -> bool
+static Gedcom.Vector.EventRecord.operator ==(Gedcom.Vector.EventRecord? left, Gedcom.Vector.EventRecord? right) -> bool
+static Gedcom.Vector.FamilyRecord.operator !=(Gedcom.Vector.FamilyRecord? left, Gedcom.Vector.FamilyRecord? right) -> bool
+static Gedcom.Vector.FamilyRecord.operator ==(Gedcom.Vector.FamilyRecord? left, Gedcom.Vector.FamilyRecord? right) -> bool
+static Gedcom.Vector.GedcomServiceCollectionExtensions.AddGedcomImport(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Gedcom.Vector.GedcomTreeContextExtensions.ToContext(this Gedcom.Vector.GedcomParseResult! result) -> Gedcom.Vector.GedcomTreeContext!
+static Gedcom.Vector.Gedzip.GedzipAdapter.CreateGedzip(Gedcom.Vector.GedcomParseResult! parseResult, Gedcom.Vector.IGedcomExportWriter! exportWriter, System.IO.Stream! outputStream) -> void
+static Gedcom.Vector.Gedzip.GedzipAdapter.ParseGedzip(System.IO.Stream! gedzipStream, Gedcom.Vector.IGedcomImportAdapter! importAdapter) -> Gedcom.Vector.GedcomParseResult!
+static Gedcom.Vector.MediaReferenceRecord.operator !=(Gedcom.Vector.MediaReferenceRecord? left, Gedcom.Vector.MediaReferenceRecord? right) -> bool
+static Gedcom.Vector.MediaReferenceRecord.operator ==(Gedcom.Vector.MediaReferenceRecord? left, Gedcom.Vector.MediaReferenceRecord? right) -> bool
+static Gedcom.Vector.Parsing.Utf8GedcomParser.Parse(System.IO.Stream! stream, Microsoft.Extensions.Logging.ILogger? logger = null) -> Gedcom.Vector.GedcomParseResult!
+static Gedcom.Vector.PersonRecord.operator !=(Gedcom.Vector.PersonRecord? left, Gedcom.Vector.PersonRecord? right) -> bool
+static Gedcom.Vector.PersonRecord.operator ==(Gedcom.Vector.PersonRecord? left, Gedcom.Vector.PersonRecord? right) -> bool
+static Gedcom.Vector.UnparsedRecord.operator !=(Gedcom.Vector.UnparsedRecord? left, Gedcom.Vector.UnparsedRecord? right) -> bool
+static Gedcom.Vector.UnparsedRecord.operator ==(Gedcom.Vector.UnparsedRecord? left, Gedcom.Vector.UnparsedRecord? right) -> bool
+virtual Gedcom.Vector.EventRecord.<Clone>$() -> Gedcom.Vector.EventRecord!
+virtual Gedcom.Vector.EventRecord.EqualityContract.get -> System.Type!
+virtual Gedcom.Vector.EventRecord.Equals(Gedcom.Vector.EventRecord? other) -> bool
+virtual Gedcom.Vector.EventRecord.PrintMembers(System.Text.StringBuilder! builder) -> bool
+virtual Gedcom.Vector.FamilyRecord.<Clone>$() -> Gedcom.Vector.FamilyRecord!
+virtual Gedcom.Vector.FamilyRecord.EqualityContract.get -> System.Type!
+virtual Gedcom.Vector.FamilyRecord.Equals(Gedcom.Vector.FamilyRecord? other) -> bool
+virtual Gedcom.Vector.FamilyRecord.PrintMembers(System.Text.StringBuilder! builder) -> bool
+virtual Gedcom.Vector.MediaReferenceRecord.<Clone>$() -> Gedcom.Vector.MediaReferenceRecord!
+virtual Gedcom.Vector.MediaReferenceRecord.EqualityContract.get -> System.Type!
+virtual Gedcom.Vector.MediaReferenceRecord.Equals(Gedcom.Vector.MediaReferenceRecord? other) -> bool
+virtual Gedcom.Vector.MediaReferenceRecord.PrintMembers(System.Text.StringBuilder! builder) -> bool
+virtual Gedcom.Vector.PersonRecord.<Clone>$() -> Gedcom.Vector.PersonRecord!
+virtual Gedcom.Vector.PersonRecord.EqualityContract.get -> System.Type!
+virtual Gedcom.Vector.PersonRecord.Equals(Gedcom.Vector.PersonRecord? other) -> bool
+virtual Gedcom.Vector.PersonRecord.PrintMembers(System.Text.StringBuilder! builder) -> bool
+virtual Gedcom.Vector.UnparsedRecord.<Clone>$() -> Gedcom.Vector.UnparsedRecord!
+virtual Gedcom.Vector.UnparsedRecord.EqualityContract.get -> System.Type!
+virtual Gedcom.Vector.UnparsedRecord.Equals(Gedcom.Vector.UnparsedRecord? other) -> bool
+virtual Gedcom.Vector.UnparsedRecord.PrintMembers(System.Text.StringBuilder! builder) -> bool

@@ -1,0 +1,2 @@
+#nullable enable
+static Gedcom.Vector.GedcomServiceCollectionExtensions.AddGedcomImport(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Gedcom.Vector.GedcomImportOptions!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

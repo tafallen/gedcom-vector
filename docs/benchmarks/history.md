@@ -22,7 +22,6 @@ One row per benchmark per checkpoint, appended by `tools/Run-Benchmarks.ps1`. Th
 | 2026-11-22 | 13f460f | Task 2: AOT binding | QueryChildrenLinq | 7.27 us | 600 B | n/a |
 | 2026-11-22 | 13f460f | Task 2: AOT binding | QueryChildrenFluent | 22.47 ns | 64 B | n/a |
 | 2026-11-22 | 13f460f | Task 2: AOT binding | CreateTreeContext | 0.935 ms | 1,039,811 B | n/a |
-
 | 2026-11-22 | 08070d2 | Task 5: .NET 10 baseline (also post-Task-4 checkpoint) | MeasureParsingGedcomVector | 3.254 ms | 2,681,454 B | 0.0% |
 | 2026-11-22 | 08070d2 | Task 5: .NET 10 baseline (also post-Task-4 checkpoint) | MeasureParsingGedcomNetSDK | 2.127 s | 2,590,067,576 B | n/a (context only) |
 | 2026-11-22 | 08070d2 | Task 5: .NET 10 baseline (also post-Task-4 checkpoint) | MeasureParsingGeneGenie | 26.654 ms | 2,822,824 B | n/a (context only) |

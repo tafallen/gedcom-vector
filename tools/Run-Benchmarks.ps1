@@ -26,12 +26,15 @@ param(
     [string]$Label = '',
     [switch]$All,
     [string]$ResultsOnly = '',
-    [switch]$NoHistory
+    [switch]$NoHistory,
+    [string]$BaselineFile = '',
+    [string[]]$Filter = @(),
+    [string]$Job = ''
 )
 
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
-$baselineFile = Join-Path $repo 'docs/benchmarks/baseline.json'
+$baselineFile = if ($BaselineFile) { $BaselineFile } else { Join-Path $repo 'docs/benchmarks/baseline.json' }
 $historyFile = Join-Path $repo 'docs/benchmarks/history.md'
 $project = Join-Path $repo 'tests/Gedcom.Vector.Benchmarks'
 $gatedFilters = @('*MeasureParsingGedcomVector', '*MeasureExporting*', '*QueryChildren*', '*CreateTreeContext')
@@ -56,27 +59,37 @@ try {
     else {
         $resultsDir = Join-Path $repo 'BenchmarkDotNet.Artifacts/results'
         if (Test-Path $resultsDir) { Remove-Item (Join-Path $resultsDir '*') -Force }
-        $filters = if ($All) { @('*') } else { $gatedFilters }
+        $filters = @(if ($Filter.Count) { $Filter } elseif ($All) { '*' } else { $gatedFilters })
+        $extra = @(if ($Job) { '--job'; $Job })
+        Write-Host ('Benchmark filters: ' + ($filters -join ' ') + ' | extra: ' + ($extra -join ' '))
         Push-Location $repo
         try {
-            & dotnet run -c Release --project $project -- --filter @filters --exporters json csv github
+            & dotnet run -c Release --project $project -- --filter @filters --exporters json csv github @extra
             if ($LASTEXITCODE -ne 0) { throw "dotnet run failed with exit code $LASTEXITCODE" }
         }
         finally { Pop-Location }
     }
 
-    $json = Get-ChildItem $resultsDir -Filter '*-report*.json' -ErrorAction SilentlyContinue | Select-Object -First 1
-    if (-not $json) { throw "No BenchmarkDotNet JSON report found in $resultsDir" }
-    $report = Get-Content $json.FullName -Raw | ConvertFrom-Json
-    if (-not $report.Benchmarks) { throw "No benchmarks in $($json.FullName)" }
+    $jsonFiles = @(Get-ChildItem $resultsDir -Filter '*-report*.json' -ErrorAction SilentlyContinue)
+    if (-not $jsonFiles.Count) { throw "No BenchmarkDotNet JSON report found in $resultsDir" }
+    # One report per benchmark class, possibly in several JSON flavours: read all, de-duplicate by class and method.
+    $byKey = [ordered]@{}
+    foreach ($f in $jsonFiles) {
+        $rep = Get-Content $f.FullName -Raw | ConvertFrom-Json
+        if (-not $rep.Benchmarks) { throw "No benchmarks in $($f.FullName)" }
+        foreach ($bm in $rep.Benchmarks) { $byKey["$($bm.Type).$($bm.Method)"] = $bm }
+    }
+    $benchmarks = @($byKey.Values)
 
     $commit = (& git -C $repo rev-parse --short HEAD).Trim()
     $date = Get-Date -Format 'yyyy-MM-dd'
     $rows = New-Object System.Collections.Generic.List[string]
     $warnings = New-Object System.Collections.Generic.List[string]
 
-    foreach ($b in $report.Benchmarks) {
+    $seen = @{}
+    foreach ($b in $benchmarks) {
         $name = $b.Method
+        $seen[$name] = $true
         if (-not $All -and $competitors -contains $name) { continue }
         $mean = [double]$b.Statistics.Mean
         $alloc = [long]$b.Memory.BytesAllocatedPerOperation
@@ -86,8 +99,16 @@ try {
             $pctText = ('{0:+0.0;-0.0;0.0}%' -f $pct)
             if ($pct -gt $threshold) { $warnings.Add("$name is $pctText versus its gate reference ($(Format-Time $mean) against $(Format-Time $ref.gateReferenceNs))") }
         }
-        else { $pctText = 'n/a (context only)' }
+        elseif ($competitors -contains $name) { $pctText = 'n/a (context only)' }
+        else {
+            $pctText = 'no gate reference'
+            $warnings.Add("$name has no entry in baseline.json (no gate reference)")
+        }
         $rows.Add(('| {0} | {1} | {2} | {3} | {4} | {5:N0} B | {6} |' -f $date, $commit, $Label, $name, (Format-Time $mean), $alloc, $pctText))
+    }
+
+    foreach ($gated in $baseline.benchmarks.PSObject.Properties.Name) {
+        if (-not $seen.ContainsKey($gated)) { $warnings.Add("$gated is in baseline.json but missing from the results") }
     }
 
     $rows | ForEach-Object { Write-Host $_ }
@@ -95,7 +116,10 @@ try {
     if (-not $warnings.Count) { Write-Host "No row is over +$threshold% versus its gate reference." }
 
     if (-not $NoHistory) {
-        if (-not (Test-Path $historyFile)) { throw "Missing $historyFile" }
+        if (-not (Test-Path $historyFile)) {
+            $header = @('# Benchmark history', '', '| Date | Commit | Label | Benchmark | Mean | Allocated | vs gate |', '|---|---|---|---|---|---|---|')
+            Set-Content -Path $historyFile -Value $header -Encoding utf8
+        }
         Add-Content -Path $historyFile -Value $rows -Encoding utf8
         Write-Host "Appended $($rows.Count) rows to $historyFile"
     }

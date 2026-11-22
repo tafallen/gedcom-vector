@@ -1,3 +1,4 @@
+#Requires -Version 7
 <#
 .SYNOPSIS
   Runs the Gedcom.Vector benchmarks and appends one row per benchmark to docs/benchmarks/history.md.

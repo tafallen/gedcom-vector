@@ -1,3 +1,4 @@
+#Requires -Version 7
 <#
 .SYNOPSIS
 Runs the smoke app as a Native AOT binary and as a JIT binary over a corpus and fails on any difference.
@@ -9,7 +10,7 @@ binaries over every selected file in each corpus directory for each export targe
 failure-path checks (a missing input must exit 3, a .txt input must exit 4). For every run the exit code, the stdout
 summary and the bytes of the output file (compared by SHA-256) must be identical between the two binaries. A corpus
 file must also exit 0. One line per comparison is printed (file name, target, match or DIFF); file contents are never
-printed. The script exits 0 only if everything matches and the AOT publish logged no IL warnings.
+printed. stderr must also be identical. The script exits 0 only if everything matches and the AOT publish logged no IL warnings.
 
 .PARAMETER Rid
 Runtime identifier to publish for, for example linux-x64 or win-x64.
@@ -77,6 +78,15 @@ function Invoke-Publish([string]$label, [string[]]$extraArgs, [string]$outDir) {
     Write-Host "  $label publish succeeded with no IL warnings."
 }
 
+# A Native AOT publish has no managed entry assembly; a JIT build masquerading as AOT would ship one.
+function Assert-NativeBuild([string]$dir) {
+    if ($SkipAot) { return }
+    $managed = Join-Path $dir 'Gedcom.Vector.AotSmoke.dll'
+    if (Test-Path -LiteralPath $managed) {
+        Fail "$managed exists: the 'aot' output is a managed build, not Native AOT."
+    }
+}
+
 function Invoke-Smoke([string]$exe, [string[]]$arguments) {
     $psi = [System.Diagnostics.ProcessStartInfo]::new($exe)
     foreach ($a in $arguments) { $psi.ArgumentList.Add($a) }
@@ -86,9 +96,9 @@ function Invoke-Smoke([string]$exe, [string[]]$arguments) {
     $psi.UseShellExecute = $false
     $proc = [System.Diagnostics.Process]::Start($psi)
     $stdoutTask = $proc.StandardOutput.ReadToEndAsync()
-    $null = $proc.StandardError.ReadToEndAsync()
+    $stderrTask = $proc.StandardError.ReadToEndAsync()
     $proc.WaitForExit()
-    [pscustomobject]@{ Exit = $proc.ExitCode; Stdout = $stdoutTask.GetAwaiter().GetResult() }
+    [pscustomobject]@{ Exit = $proc.ExitCode; Stdout = $stdoutTask.GetAwaiter().GetResult(); Stderr = $stderrTask.GetAwaiter().GetResult() }
 }
 
 # Clean previous output so stale files can never mask a failure.
@@ -104,6 +114,7 @@ else {
 }
 Invoke-Publish 'jit' @('-p:PublishAot=false', '--self-contained', 'false') $jitDir
 
+Assert-NativeBuild $aotDir
 $aotExe = Join-Path $aotDir $exeName
 $jitExe = Join-Path $jitDir $exeName
 foreach ($exe in $aotExe, $jitExe) {
@@ -146,7 +157,7 @@ foreach ($run in $runs) {
         if ($run.Target) { $arguments += @('--target', $run.Target) }
         $r = Invoke-Smoke $build.Exe $arguments
         $hash = if (Test-Path $outFile) { (Get-FileHash -Algorithm SHA256 -Path $outFile).Hash } else { $null }
-        $results[$build.Id] = [pscustomobject]@{ Exit = $r.Exit; Stdout = $r.Stdout; Hash = $hash }
+        $results[$build.Id] = [pscustomobject]@{ Exit = $r.Exit; Stdout = $r.Stdout; Stderr = $r.Stderr; Hash = $hash }
     }
 
     $a = $results['aot']
@@ -155,6 +166,7 @@ foreach ($run in $runs) {
     if ($a.Exit -ne $j.Exit) { $problems.Add("exit codes differ (aot $($a.Exit), jit $($j.Exit))") }
     elseif ($a.Exit -ne $run.Expected) { $problems.Add("unexpected exit code $($a.Exit), wanted $($run.Expected)") }
     if ($a.Stdout -cne $j.Stdout) { $problems.Add('stdout differs') }
+    if ($a.Stderr -cne $j.Stderr) { $problems.Add('stderr differs') }
     if ($a.Hash -ne $j.Hash) { $problems.Add('output bytes differ') }
 
     if ($problems.Count -eq 0) {

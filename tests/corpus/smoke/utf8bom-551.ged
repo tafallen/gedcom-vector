@@ -1,0 +1,39 @@
+﻿0 HEAD
+1 SOUR GVSMOKE
+2 NAME Gedcom.Vector smoke corpus
+1 GEDC
+2 VERS 5.5.1
+2 FORM LINEAGE-LINKED
+1 CHAR UTF-8
+0 @I1@ INDI
+1 NAME Zoë /Baker/
+1 SEX F
+1 BIRT
+2 DATE 1 JAN 1950
+2 PLAC Reykjavík
+1 FAMS @F1@
+0 @I2@ INDI
+1 NAME Tom /Baker/
+1 SEX M
+1 FAMS @F1@
+0 @I3@ INDI
+1 NAME Mia /Baker/
+1 SEX F
+1 FAMC @F1@
+1 OBJE @M1@
+1 SOUR @S1@
+0 @F1@ FAM
+1 HUSB @I2@
+1 WIFE @I1@
+1 CHIL @I3@
+1 MARR
+2 DATE 20 AUG 1975
+0 @M1@ OBJE
+1 FILE media/photo.jpg
+2 FORM jpeg
+2 TITL Family portrait
+0 @S1@ SOUR
+1 TITL Fictional family bible
+0 _CUSTOM @X1@
+1 NOTE A custom level-0 record that must survive a round trip
+0 TRLR

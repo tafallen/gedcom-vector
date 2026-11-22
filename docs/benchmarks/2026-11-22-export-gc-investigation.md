@@ -2,7 +2,7 @@
 
 ## Symptom
 
-After the Task 1 retarget to `net10.0` (commit `296ee8b`), `MeasureExporting` went from 1.54 ms to 2.2 to 2.5 ms and `MeasureExportingContext` from 1.47 ms to 2.2 to 2.4 ms, with a standard deviation of about 20%. Allocation was unchanged at 4.57 MB per call. Every other Gedcom.Vector benchmark was flat or faster.
+After the Task 1 retarget to `net10.0` (commit `296ee8b`), `MeasureExporting` went from 1.54 ms to 2.2 to 2.5 ms and `MeasureExportingContext` from 1.47 ms to 2.2 to 2.4 ms, with a standard deviation of about 20%. Allocation was unchanged at 4.57 MiB per call. Every other Gedcom.Vector benchmark was flat or faster.
 
 ## Method
 
@@ -17,11 +17,11 @@ All runs on the same machine (AMD Ryzen AI 7 350, Windows 11, SDK 10.0.404, runt
 | Parse result only | default (background GC on) | 1.80 ms ±0.04 | 1.70 ms ±0.05 | -6% |
 | Parse result, bytes and context | default (background GC on) | 1.73 ms ±0.21 | 2.42 ms ±0.50 | +40% |
 | Parse result only | `DOTNET_gcConcurrent=0` | 1.83 ms ±0.05 | 1.71 ms ±0.05 | -6% |
-| Parse result, bytes and context | `DOTNET_gcConcurrent=0` | 2.04 ms ±0.01 | 1.90 ms ±0.00 | -6% |
+| Parse result, bytes and context | `DOTNET_gcConcurrent=0` | 2.04 ms ±0.01 | 1.90 ms ±0.00 | -7% |
 
 ## Root cause
 
-The 1.3.2 writer allocates 4.57 MB to produce about 1.2 MB of string: the output `MemoryStream` grows from 4 KB by doubling, the three lookup dictionaries and their lists grow from empty, and the final string is decoded from the stream. Most of that lands on the large object heap, which triggers about one Gen2 collection per call. With background GC on and a larger live heap, .NET 10 schedules those background Gen2 collections differently from .NET 8, which costs about 40% and produces bimodal timings. With background GC off, .NET 10 is 6% faster than .NET 8 in every setup.
+The 1.3.2 writer allocates 4.57 MiB to produce about 1.2 MB of string (3.9x, measured): the output `MemoryStream` grows from 4 KB by doubling, the three lookup dictionaries and their lists grow from empty, and the final string is decoded from the stream. Most of that lands on the large object heap, which triggers about one Gen2 collection per call. With background GC on and a larger live heap, .NET 10 schedules those background Gen2 collections differently from .NET 8, which costs about 40% and produces bimodal timings. With background GC off, .NET 10 is 6 to 7% faster than .NET 8 in every setup.
 
 The runtime change exposed the defect; the defect is ours. Real callers keep more live data than the benchmark, so they are more exposed, not less.
 

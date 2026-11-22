@@ -1,5 +1,5 @@
 {
-  "description": "Gate references for tools/Run-Benchmarks.ps1. gateReferenceNs is the Task 5 baseline mean, except the two export rows, which use the lower of the baseline and the .NET 8 start point (1.54 ms, 1.47 ms).",
+  "description": "Gate references for tools/Run-Benchmarks.ps1. gateReferenceNs is the Task 5 baseline mean, except the two export rows, which use the lower of the baseline and the .NET 8 start point (1,540,517.67 ns and 1,466,806.93 ns).",
   "commit": "08070d2",
   "benchmarks": {
     "MeasureParsingGedcomVector": {
@@ -9,12 +9,12 @@
     },
     "MeasureExporting": {
       "meanNs": 2077126.44,
-      "gateReferenceNs": 1540000.0,
+      "gateReferenceNs": 1540517.67,
       "allocatedBytes": 4792572
     },
     "MeasureExportingContext": {
       "meanNs": 2197419.2,
-      "gateReferenceNs": 1470000.0,
+      "gateReferenceNs": 1466806.93,
       "allocatedBytes": 4792544
     },
     "QueryChildrenLinq": {

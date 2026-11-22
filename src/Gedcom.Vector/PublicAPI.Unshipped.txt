@@ -31,3 +31,39 @@ Gedcom.Vector.Diagnostics.GedcomDiagnosticSeverity.Error = 2 -> Gedcom.Vector.Di
 Gedcom.Vector.Diagnostics.GedcomDiagnosticSeverity.Info = 0 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticSeverity
 Gedcom.Vector.Diagnostics.GedcomDiagnosticSeverity.Warning = 1 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticSeverity
 override Gedcom.Vector.Diagnostics.GedcomDiagnostic.ToString() -> string!
+Gedcom.Vector.Model.ExtensionRecord
+Gedcom.Vector.Model.ExtensionRecord.ExtensionRecord() -> void
+Gedcom.Vector.Model.ExtensionRecord.Structure.get -> Gedcom.Vector.Model.GedcomStructure!
+Gedcom.Vector.Model.ExtensionRecord.Structure.set -> void
+Gedcom.Vector.Model.GedcomDocument
+Gedcom.Vector.Model.GedcomDocument.Diagnostics.get -> System.Collections.Generic.List<Gedcom.Vector.Diagnostics.GedcomDiagnostic!>!
+Gedcom.Vector.Model.GedcomDocument.ExtensionRecords.get -> System.Collections.Generic.List<Gedcom.Vector.Model.ExtensionRecord!>!
+Gedcom.Vector.Model.GedcomDocument.GedcomDocument() -> void
+Gedcom.Vector.Model.GedcomDocument.SourceVersion.get -> Gedcom.Vector.GedcomSpecVersion
+Gedcom.Vector.Model.GedcomDocument.SourceVersion.set -> void
+Gedcom.Vector.Model.GedcomElement
+Gedcom.Vector.Model.GedcomElement.Extensions.get -> System.Collections.Generic.List<Gedcom.Vector.Model.GedcomExtension!>!
+Gedcom.Vector.Model.GedcomElement.GedcomElement() -> void
+Gedcom.Vector.Model.GedcomElement.SourceOrder.get -> int?
+Gedcom.Vector.Model.GedcomElement.SourceOrder.set -> void
+Gedcom.Vector.Model.GedcomExtension
+Gedcom.Vector.Model.GedcomExtension.GedcomExtension() -> void
+Gedcom.Vector.Model.GedcomExtension.SourceOrder.get -> int?
+Gedcom.Vector.Model.GedcomExtension.SourceOrder.set -> void
+Gedcom.Vector.Model.GedcomExtension.Structure.get -> Gedcom.Vector.Model.GedcomStructure!
+Gedcom.Vector.Model.GedcomExtension.Structure.set -> void
+Gedcom.Vector.Model.GedcomStructure
+Gedcom.Vector.Model.GedcomStructure.Children.get -> System.Collections.Generic.List<Gedcom.Vector.Model.GedcomStructure!>!
+Gedcom.Vector.Model.GedcomStructure.ExtensionUri.get -> string?
+Gedcom.Vector.Model.GedcomStructure.ExtensionUri.set -> void
+Gedcom.Vector.Model.GedcomStructure.GedcomStructure() -> void
+Gedcom.Vector.Model.GedcomStructure.SourceLine.get -> int?
+Gedcom.Vector.Model.GedcomStructure.SourceLine.set -> void
+Gedcom.Vector.Model.GedcomStructure.Tag.get -> string!
+Gedcom.Vector.Model.GedcomStructure.Tag.set -> void
+Gedcom.Vector.Model.GedcomStructure.Value.get -> string?
+Gedcom.Vector.Model.GedcomStructure.Value.set -> void
+Gedcom.Vector.Model.GedcomStructure.ValueIsPointer.get -> bool
+Gedcom.Vector.Model.GedcomStructure.ValueIsPointer.set -> void
+Gedcom.Vector.Model.GedcomStructure.Xref.get -> string?
+Gedcom.Vector.Model.GedcomStructure.Xref.set -> void

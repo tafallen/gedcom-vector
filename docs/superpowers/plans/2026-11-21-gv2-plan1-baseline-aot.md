@@ -166,13 +166,13 @@ Expected: every line `match`, exit code 0, no `IL` warnings. Then once, locally 
 - Create: `docs/benchmarks/2026-11-21-baseline-1.3.2-net10.md`, `tools/Run-Benchmarks.ps1`
 - Modify: `docs/benchmarks/history.md`, `tests/Gedcom.Vector.Benchmarks/*` only if BenchmarkDotNet 0.15 requires API changes
 
-`tools/Run-Benchmarks.ps1 [-Label <text>] [-All]`: runs the Gedcom.Vector benchmarks (all benchmarks with `-All`), then appends one row per benchmark to `docs/benchmarks/history.md` (date, commit, label, mean, allocated, percent change versus the Task 5 baseline) and prints any row over +10%.
+`tools/Run-Benchmarks.ps1 [-Label <text>] [-All]`: runs the Gedcom.Vector benchmarks (all benchmarks with `-All`), then appends one row per benchmark to `docs/benchmarks/history.md` (date, commit, label, mean, allocated, percent change versus the gate reference) and prints any row over +10%. The gate reference is the Task 5 baseline mean, except for `MeasureExporting` and `MeasureExportingContext`, whose reference is the lower of the Task 5 mean and the .NET 8 start point (1.54 ms and 1.47 ms, from `docs/benchmarks/2026-11-21-start-1.3.2-net8.md`), per design section 8 and `docs/benchmarks/2026-11-22-export-gc-investigation.md`.
 
 **Interfaces:**
-- Produces: the GV-07 baseline Plan 8 compares against: mean, error, standard deviation and allocation for `MeasureParsing_GedcomVector`, `MeasureExporting`, `MeasureExportingContext`, `QueryChildrenLinq`, `QueryChildrenFluent`, `CreateTreeContext`, plus machine, OS, SDK and runtime lines from the BenchmarkDotNet header. Competitor rows recorded for context only.
+- Produces: the GV-07 baseline Plan 8 compares against: mean, error, standard deviation and allocation for `MeasureParsingGedcomVector`, `MeasureExporting`, `MeasureExportingContext`, `QueryChildrenLinq`, `QueryChildrenFluent`, `CreateTreeContext`, plus machine, OS, SDK and runtime lines from the BenchmarkDotNet header. Competitor rows recorded for context only.
 
 - [ ] **Step 1: Run the benchmarks** in the background (they take several minutes): `dotnet run -c Release --project tests/Gedcom.Vector.Benchmarks -- --filter "*"` on a quiet machine, on AC power.
-- [ ] **Step 2: Write the baseline doc**: the BenchmarkDotNet GitHub-markdown table copied from `BenchmarkDotNet.Artifacts/results/*-report-github.md`, the commit SHA measured, and one paragraph stating that Plan 8 reruns the identical workload on the same machine and that only Gedcom.Vector rows are gated (user decision: a residual regression over 10% is recorded, not blocking).
+- [ ] **Step 2: Write the baseline doc**: the BenchmarkDotNet GitHub-markdown table copied from `BenchmarkDotNet.Artifacts/results/*-report-github.md`, the commit SHA measured, and one paragraph stating that Plan 8 reruns the identical workload on the same machine and that only Gedcom.Vector rows are gated (user decision: a residual regression over 10% is recorded, not blocking), plus one paragraph noting that the two export rows carry a background-GC cost from the 1.3.2 writer and are gated against the lower of this baseline and the .NET 8 start point, linking `docs/benchmarks/2026-11-22-export-gc-investigation.md`.
 - [ ] **Step 3: Commit** `docs: record the .NET 10 benchmark baseline for 1.3.2`
 
 ---

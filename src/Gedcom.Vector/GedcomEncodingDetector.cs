@@ -28,7 +28,8 @@ internal static class GedcomEncodingDetector
 
         if (readLength >= 3 && buffer[0] == 0xEF && buffer[1] == 0xBB && buffer[2] == 0xBF)
         {
-            return new GedcomEncodingResult(new UTF8Encoding(false), false, 3);
+            // Emit-BOM encoding so StreamReader consumes the 3-byte preamble instead of leaving U+FEFF on the first line.
+            return new GedcomEncodingResult(new UTF8Encoding(true), false, 3);
         }
 
         if (readLength >= 2 && buffer[0] == 0xFF && buffer[1] == 0xFE)

@@ -117,4 +117,44 @@ public class Gedcom70AndGedzipTests
         var entry = Assert.Single(archive.Entries);
         Assert.Equal(new DateTimeOffset(1980, 1, 1, 0, 0, 0, TimeSpan.Zero), entry.LastWriteTime);
     }
+
+    private const string MinimalGedcom70 =
+        "0 HEAD\n" +
+        "1 GEDC\n" +
+        "2 VERS 7.0\n" +
+        "0 @I1@ INDI\n" +
+        "1 NAME Zo\u00EB /Baker/\n" +
+        "0 TRLR\n";
+
+    [Fact]
+    public void ParseUtf8Gedcom70ReportsNoEncodingError()
+    {
+        using var ms = new MemoryStream(new UTF8Encoding(false).GetBytes(MinimalGedcom70));
+        var result = new GedcomImportAdapter().Parse(ms);
+
+        Assert.Equal(GedcomSpecVersion.Gedcom70, result.SpecVersion);
+        Assert.Empty(result.Errors);
+        Assert.Single(result.Persons);
+    }
+
+    [Fact]
+    public void ParseUtf8BomGedcom70ReportsNoEncodingError()
+    {
+        byte[] bytes = [.. Encoding.UTF8.GetPreamble(), .. new UTF8Encoding(false).GetBytes(MinimalGedcom70)];
+        using var ms = new MemoryStream(bytes);
+        var result = new GedcomImportAdapter().Parse(ms);
+
+        Assert.Equal(GedcomSpecVersion.Gedcom70, result.SpecVersion);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void ParseAnsiGedcom70StillReportsEncodingError()
+    {
+        string content = MinimalGedcom70.Replace("2 VERS 7.0\n", "2 VERS 7.0\n1 CHAR ANSI\n", StringComparison.Ordinal);
+        using var ms = new MemoryStream(Encoding.Latin1.GetBytes(content));
+        var result = new GedcomImportAdapter().Parse(ms);
+
+        Assert.Contains(result.Errors, e => e.Contains("GEDCOM 7.0 requires UTF-8", StringComparison.Ordinal));
+    }
 }

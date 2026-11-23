@@ -29,6 +29,7 @@ internal sealed class GedcomStructureReader
 
     private string? _recordXref;
     private int _receiverLevel = -1;
+    private int _blankRun;
     private int _lineNumber;
     private bool _leadingWhitespaceReported;
     private GedcomDiagnostic? _blankDiagnostic;
@@ -51,7 +52,7 @@ internal sealed class GedcomStructureReader
         while (_lines.TryReadLine(out var text, out var lineNumber))
         {
             _lineNumber = lineNumber;
-            Process(GedcomLineTokenizer.Tokenize(text), _lines.LastLineTruncated);
+            Process(GedcomLineTokenizer.Tokenize(text), text, _lines.LastLineTruncated);
             if (_completed is { } completed)
             {
                 _completed = null;
@@ -71,7 +72,7 @@ internal sealed class GedcomStructureReader
         return last;
     }
 
-    private void Process(GedcomLine line, bool truncated)
+    private void Process(GedcomLine line, ReadOnlySpan<char> text, bool truncated)
     {
         switch (line.Kind)
         {
@@ -79,14 +80,18 @@ internal sealed class GedcomStructureReader
                 ProcessBlank(truncated);
                 break;
             case GedcomLineKind.NoLevel:
-                ProcessNoLevel(line, truncated);
+                ProcessNoLevel(text, truncated);
+                _blankRun = 0;
                 break;
             default:
                 ProcessStructure(line, truncated);
+                _blankRun = 0;
                 break;
         }
     }
 
+    // A blank line stays accounted by the one BlankLinesIgnored diagnostic. When a level-less line follows, the run of
+    // blank lines before it becomes line breaks in the value it is appended to.
     private void ProcessBlank(bool truncated)
     {
         if (truncated)
@@ -94,22 +99,38 @@ internal sealed class GedcomStructureReader
             Add(GedcomDiagnosticCode.LineTooLong, BuildPath(_open.Count, null), null);
         }
 
+        _blankRun++;
         _blankDiagnostic ??= Add(GedcomDiagnosticCode.BlankLinesIgnored, BuildPath(_open.Count, null), null);
         Account(LineDispositionKind.Diagnostic, null, _blankDiagnostic);
     }
 
-    private void ProcessNoLevel(GedcomLine line, bool truncated)
+    // A level-less line keeps its text exactly, leading whitespace included (so it raises no LeadingWhitespace note).
+    // With no structure before it, it becomes a level-0 placeholder record holding the text as its value.
+    private void ProcessNoLevel(ReadOnlySpan<char> text, bool truncated)
     {
         var path = BuildPath(_receiverLevel + 1, null);
-        AddLineFlags(line, truncated, path, null);
+        if (truncated)
+        {
+            Add(GedcomDiagnosticCode.LineTooLong, path, null);
+        }
+
         if (_receiverLevel < 0)
         {
-            var unplaced = Add(GedcomDiagnosticCode.LineWithoutLevelUnplaced, path, null);
-            Account(LineDispositionKind.Diagnostic, null, unplaced);
+            var placeholder = new GedcomStructure { Tag = "", Value = text.ToString(), SourceLine = _lineNumber };
+            _recordXref = null;
+            Push(placeholder);
+            _receiverLevel = 0;
+            Add(GedcomDiagnosticCode.LineWithoutLevelUnplaced, path, null);
+            Account(LineDispositionKind.Structure, placeholder, null);
             return;
         }
 
-        Append(_receiverLevel, newline: true, line.Text);
+        for (var i = 0; i < _blankRun; i++)
+        {
+            Append(_receiverLevel, newline: true, default);
+        }
+
+        Append(_receiverLevel, newline: true, text);
         Add(GedcomDiagnosticCode.LineWithoutLevel, path, null);
         Account(LineDispositionKind.Folded, _open[_receiverLevel], null);
     }

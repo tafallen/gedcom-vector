@@ -266,7 +266,11 @@ public class GedcomStructureReaderTests
     [InlineData("0 @N1@ NOTE first\nsecond line\n1 CONT third\nfourth\n", "NOTE", "first\nsecond line\nthird\nfourth", 2)]
     [InlineData("0 @I1@ INDI\n1 NOTE a\nb\n1 BIRT\n", "NOTE", "a\nb", 1)]
     [InlineData("0 @I1@ INDI\n1 NOTE\nb\n", "NOTE", "\nb", 1)]
-    [InlineData("0 @I1@ INDI\n1 NOTE a\n\n   b c \n", "NOTE", "a\nb c ", 1)]
+    [InlineData("0 @I1@ INDI\n1 NOTE a\n\n   b c \n", "NOTE", "a\n\n   b c ", 1)]
+    [InlineData("0 @I1@ INDI\n1 NOTE a\n\nb\n", "NOTE", "a\n\nb", 1)]
+    [InlineData("0 @I1@ INDI\n1 NOTE a\n\n \n\t\n  b\n\n1 BIRT\n", "NOTE", "a\n\n\n\n  b", 1)]
+    [InlineData("0 @I1@ INDI\n1 NOTE a\n\n1 BIRT\n\nb\n", "BIRT", "\n\nb", 1)]
+    [InlineData("0 @I1@ INDI\n1 NOTE a\n\tb\n  c\n", "NOTE", "a\n\tb\n  c", 2)]
     [InlineData("0 @I1@ INDI\n1 NOTE a\n2 SOUR s\n2 CONT b\nlost\n", "NOTE", "a\nb\nlost", 1)]
     public void AppendsLineWithoutLevelToPreviousValue(string text, string tag, string expected, int expectedWarnings)
     {
@@ -284,19 +288,43 @@ public class GedcomStructureReaderTests
     }
 
     [Fact]
-    public void ReportsUnplacedLineWithoutLevel()
+    public void KeepsUnplacedLineWithoutLevelAsPlaceholderRecord()
     {
         var result = Read("stray text\n0 HEAD\n");
 
-        var head = Assert.Single(result.Records);
-        Assert.Null(head.Value);
+        Assert.Equal(["", "HEAD"], result.Records.ConvertAll(r => r.Tag));
+        var placeholder = result.Records[0];
+        Assert.Equal("stray text", placeholder.Value);
+        Assert.Null(placeholder.Xref);
+        Assert.Equal(1, placeholder.SourceLine);
+        Assert.Empty(placeholder.Children);
+        Assert.Null(result.Records[1].Value);
         var error = Assert.Single(result.Diagnostics);
         Assert.Equal(GedcomDiagnosticCode.LineWithoutLevelUnplaced, error.Code);
         Assert.Equal(GedcomDiagnosticSeverity.Error, error.Severity);
         Assert.Equal(1, error.Line);
         Assert.Null(error.RecordXref);
         Assert.Null(error.TagPath);
-        Assert.Equal(new LineDisposition(LineDispositionKind.Diagnostic, null, error), result.Accounting[1]);
+        Assert.Equal(new LineDisposition(LineDispositionKind.Structure, placeholder, null), result.Accounting[1]);
+    }
+
+    [Fact]
+    public void UnplacedPlaceholderKeepsIndentationAndCollectsFollowingText()
+    {
+        var result = Read("\n  stray\n\n more\n1 NOTE n\n0 HEAD\n");
+
+        Assert.Equal(["", "HEAD"], result.Records.ConvertAll(r => r.Tag));
+        var placeholder = result.Records[0];
+        Assert.Equal("  stray\n\n more", placeholder.Value);
+        Assert.Equal(2, placeholder.SourceLine);
+        Assert.Equal("NOTE", Assert.Single(placeholder.Children).Tag);
+        Assert.Equal(1, result.Count(GedcomDiagnosticCode.LineWithoutLevelUnplaced));
+        Assert.Equal(1, result.Count(GedcomDiagnosticCode.LineWithoutLevel));
+        Assert.Equal(0, result.Count(GedcomDiagnosticCode.LeadingWhitespace));
+        Assert.Equal(LineDispositionKind.Diagnostic, result.Accounting[1]!.Value.Kind);
+        Assert.Equal(new LineDisposition(LineDispositionKind.Structure, placeholder, null), result.Accounting[2]);
+        Assert.Equal(LineDispositionKind.Diagnostic, result.Accounting[3]!.Value.Kind);
+        Assert.Equal(new LineDisposition(LineDispositionKind.Folded, placeholder, null), result.Accounting[4]);
     }
 
     [Fact]
@@ -475,8 +503,8 @@ public class GedcomStructureReaderTests
     {
         string[] lines =
         [
-            "stray",                // 1 no level, unplaced
-            "1 HEAD",               // 2 first structure not at level 0
+            "stray",                // 1 no level, unplaced: placeholder record
+            "1 HEAD",               // 2 under the placeholder
             "1 GEDC",               // 3
             "2 VERS 5.5.1",         // 4
             "0 @I1@ INDI",          // 5
@@ -503,7 +531,7 @@ public class GedcomStructureReaderTests
         Assert.Null(result.Accounting[21]);
         LineDispositionKind[] expected =
         [
-            LineDispositionKind.Diagnostic, LineDispositionKind.Structure, LineDispositionKind.Structure,
+            LineDispositionKind.Structure, LineDispositionKind.Structure, LineDispositionKind.Structure,
             LineDispositionKind.Structure, LineDispositionKind.Structure, LineDispositionKind.Structure,
             LineDispositionKind.Folded, LineDispositionKind.Structure, LineDispositionKind.Structure,
             LineDispositionKind.Folded, LineDispositionKind.Folded, LineDispositionKind.Diagnostic,
@@ -534,6 +562,8 @@ public class GedcomStructureReaderTests
         }
 
         Assert.Equal(3, result.Records.Count);
+        Assert.Equal("stray", result.Records[0].Value);
+        Assert.Equal(["HEAD", "GEDC"], result.Records[0].Children.ConvertAll(c => c.Tag));
         var name = FindFirst(result.Records, "NAME");
         var note = FindFirst(result.Records, "NOTE");
         Assert.Equal("John", name.Value);
@@ -549,7 +579,7 @@ public class GedcomStructureReaderTests
         Assert.Equal(1, result.Count(GedcomDiagnosticCode.LeadingWhitespace));
         Assert.Equal(1, result.Count(GedcomDiagnosticCode.ContinuationAfterChildren));
         Assert.Equal(1, result.Count(GedcomDiagnosticCode.ContinuationMisplaced));
-        Assert.Equal(2, result.Count(GedcomDiagnosticCode.LevelSkipped));
+        Assert.Equal(1, result.Count(GedcomDiagnosticCode.LevelSkipped));
         Assert.Equal(1, result.Count(GedcomDiagnosticCode.XrefOnSubstructure));
         Assert.Equal(1, result.Count(GedcomDiagnosticCode.InvalidTag));
         Assert.Equal(1, result.Count(GedcomDiagnosticCode.MalformedXref));

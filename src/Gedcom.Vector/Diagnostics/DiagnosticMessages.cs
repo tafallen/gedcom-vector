@@ -10,7 +10,7 @@ internal static class DiagnosticMessages
         GedcomDiagnosticCode.BlankLinesIgnored => (GedcomDiagnosticSeverity.Info, "Blank lines were ignored."),
         GedcomDiagnosticCode.LeadingWhitespace => (GedcomDiagnosticSeverity.Info, "Leading whitespace on a line was ignored."),
         GedcomDiagnosticCode.LineWithoutLevel => (GedcomDiagnosticSeverity.Warning, "A line without a level was appended to the previous value."),
-        GedcomDiagnosticCode.LineWithoutLevelUnplaced => (GedcomDiagnosticSeverity.Error, "A line without a level had no previous structure to append to and was dropped."),
+        GedcomDiagnosticCode.LineWithoutLevelUnplaced => (GedcomDiagnosticSeverity.Error, "A line without a level had no previous structure to append to and was kept as a record without a tag."),
         GedcomDiagnosticCode.MissingTag => (GedcomDiagnosticSeverity.Warning, "A line has no tag."),
         GedcomDiagnosticCode.InvalidTag => (GedcomDiagnosticSeverity.Warning, "The tag " + TagPlaceholder + " is not a valid GEDCOM tag."),
         GedcomDiagnosticCode.MalformedXref => (GedcomDiagnosticSeverity.Warning, "A cross-reference identifier is malformed."),

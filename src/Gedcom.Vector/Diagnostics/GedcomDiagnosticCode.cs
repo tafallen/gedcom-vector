@@ -3,16 +3,16 @@ namespace Gedcom.Vector.Diagnostics;
 /// <summary>Stable identifiers for the diagnostics the reading pipeline can raise.</summary>
 public enum GedcomDiagnosticCode
 {
-    /// <summary>Blank lines were found and ignored (Info).</summary>
+    /// <summary>Blank lines were found and ignored, except that blank lines directly before a line without a level become line breaks in the value that line is appended to (Info).</summary>
     BlankLinesIgnored = 1001,
 
     /// <summary>A line had leading whitespace, which was ignored (Info).</summary>
     LeadingWhitespace = 1002,
 
-    /// <summary>A line had no level; its text was appended to the previous value (Warning).</summary>
+    /// <summary>A line had no level; its text, leading whitespace included, was appended to the previous value after a line break, with one more line break per blank line before it (Warning).</summary>
     LineWithoutLevel = 1003,
 
-    /// <summary>A line had no level and there was no previous structure to append to (Error).</summary>
+    /// <summary>A line had no level and there was no previous structure to append to; it was kept as a level-0 record with an empty tag holding the line's text (Error).</summary>
     LineWithoutLevelUnplaced = 1004,
 
     /// <summary>A line had no tag (Warning).</summary>

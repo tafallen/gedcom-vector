@@ -27,11 +27,57 @@ public class LineAccountingTests
     [SkippableFact]
     public void AccountsForEveryPrivateCorpusLine()
     {
-        foreach (var file in PrivateCorpus.Files())
+        var files = PrivateCorpus.Files();
+        for (var i = 0; i < files.Count; i++)
         {
-            var report = Check(Path.GetFileName(file), File.ReadAllBytes(file), failOnError: true);
+            // Private files are named by index only: a file name can be personal.
+            var report = Check(FileLabel(i), File.ReadAllBytes(files[i]), failOnError: true);
             Assert.True(report.Problems.Count == 0, report.Describe());
             Assert.True(report.LineCount > 0, report.Label + " produced no accounted lines.");
+        }
+    }
+
+    internal static string FileLabel(int index) => "file #" + (index + 1).ToString(CultureInfo.InvariantCulture);
+
+    [Fact]
+    public void PrivateCorpusSelectsListedGedFilesOnly()
+    {
+        var directory = Directory.CreateTempSubdirectory("gv-private-corpus-test-");
+        try
+        {
+            var first = Path.Combine(directory.FullName, "secret-one.ged");
+            var second = Path.Combine(directory.FullName, "secret-two.GED");
+            var other = Path.Combine(directory.FullName, "secret-three.txt");
+            File.WriteAllText(first, "0 HEAD\n0 TRLR\n");
+            File.WriteAllText(second, "0 HEAD\n0 TRLR\n");
+            File.WriteAllText(other, "x");
+            File.WriteAllText(Path.Combine(directory.FullName, "unlisted.ged"), "0 HEAD\n0 TRLR\n");
+            var separator = Path.PathSeparator.ToString();
+
+            Assert.Null(PrivateCorpus.Select(first + separator + " " + second, out var files));
+            Assert.Equal([first, second], files);
+
+            foreach (var (value, index) in new[]
+            {
+                (directory.FullName, 1),
+                (first + separator + other, 2),
+                (first + separator + Path.Combine(directory.FullName, "missing.ged"), 2),
+                (first + separator, 2),
+            })
+            {
+                var error = PrivateCorpus.Select(value, out var none);
+                Assert.NotNull(error);
+                Assert.Empty(none);
+                Assert.Contains("entry #" + index.ToString(CultureInfo.InvariantCulture), error, StringComparison.Ordinal);
+                Assert.DoesNotContain("secret", error, StringComparison.Ordinal);
+                Assert.DoesNotContain(directory.FullName, error, StringComparison.Ordinal);
+            }
+
+            Assert.Equal("file #1", FileLabel(0));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
         }
     }
 

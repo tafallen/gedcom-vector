@@ -512,8 +512,13 @@ public class GedcomStructureReaderTests
         }
 
         Assert.Equal(3, result.Records.Count);
-        Assert.Equal("John", FindFirst(result.Records, "NAME").Value);
-        Assert.Equal("a\nb\nlost line", FindFirst(result.Records, "NOTE").Value);
+        var name = FindFirst(result.Records, "NAME");
+        var note = FindFirst(result.Records, "NOTE");
+        Assert.Equal("John", name.Value);
+        Assert.Equal("a\nb\nlost line", note.Value);
+        Assert.Same(name, result.Accounting[7]!.Value.Structure);
+        Assert.Same(note, result.Accounting[10]!.Value.Structure);
+        Assert.Same(note, result.Accounting[11]!.Value.Structure);
         Assert.Same(result.Accounting[12]!.Value.Diagnostic, result.Accounting[20]!.Value.Diagnostic);
         Assert.Equal(1, result.Count(GedcomDiagnosticCode.LineWithoutLevelUnplaced));
         Assert.Equal(1, result.Count(GedcomDiagnosticCode.LineWithoutLevel));

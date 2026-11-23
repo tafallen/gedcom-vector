@@ -7,7 +7,9 @@ namespace Gedcom.Vector.Parsing;
 /// <summary>
 /// Builds one level-0 record tree at a time from tokenized lines: keeps a level stack, folds <c>CONC</c> and
 /// <c>CONT</c> into their parent's value, repairs malformed lines leniently with diagnostics, and records what became
-/// of every line. Values stay raw: no decoding of any kind happens here.
+/// of every line. Values stay raw except for one step: a <c>CONT</c> or <c>CONC</c> line value starting with
+/// <c>@@</c> loses its first <c>@</c> as it is folded (each line is escaped on its own); the value's first line, ANSEL
+/// and pointer flags are decoded later by the document reader.
 /// </summary>
 internal sealed class GedcomStructureReader
 {
@@ -186,7 +188,10 @@ internal sealed class GedcomStructureReader
         var isCont = line.Tag[3] == 'T';
         if (isCont || line.HasValue)
         {
-            Append(targetLevel, newline: isCont, line.Value);
+            // Each line value carries its own leading "@@" escape. A CONC segment that starts an empty value is left
+            // raw, because it becomes the value's first line and the document reader decodes that once.
+            var segment = isCont || ValueLength(targetLevel) > 0 ? GedcomValueCodec.DecodeSegment(line.Value) : line.Value;
+            Append(targetLevel, newline: isCont, segment);
         }
 
         _receiverLevel = targetLevel;
@@ -265,6 +270,8 @@ internal sealed class GedcomStructureReader
 
         _open.Add(structure);
     }
+
+    private int ValueLength(int level) => _building[level] ? _builders[level]!.Length : _open[level].Value?.Length ?? 0;
 
     private void Append(int level, bool newline, ReadOnlySpan<char> text)
     {

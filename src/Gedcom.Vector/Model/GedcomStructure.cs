@@ -230,10 +230,11 @@ public sealed class GedcomStructure
     // Writes this structure's own line and the CONT/CONC lines for its value; the children are written by the caller.
     private void AppendLines(StringBuilder builder, int level, GedcomSpecVersion version)
     {
-        var encoded = GedcomValueCodec.Encode(Value, ValueIsPointer, version).AsSpan();
-        var newline = encoded.IndexOfAny('\r', '\n');
-        var first = newline < 0 ? encoded : encoded[..newline];
-        var rest = newline < 0 ? default : encoded[(newline + BreakLength(encoded, newline))..];
+        // Every line value is escaped on its own: the first line with the pointer flag, each CONT segment as text.
+        var value = Value.AsSpan();
+        var newline = value.IndexOfAny('\r', '\n');
+        var first = newline < 0 ? value : value[..newline];
+        var rest = newline < 0 ? default : value[(newline + BreakLength(value, newline))..];
 
         AppendLevel(builder, level);
         if (Xref is not null)
@@ -247,7 +248,7 @@ public sealed class GedcomStructure
             builder.Append(' ').Append(Tag);
             if (!first.IsEmpty)
             {
-                builder.Append(' ').Append(first);
+                AppendValue(builder.Append(' '), first, ValueIsPointer, version);
             }
         }
 
@@ -255,7 +256,7 @@ public sealed class GedcomStructure
         if (placeholder && !first.IsEmpty)
         {
             AppendLevel(builder, level + 1);
-            builder.Append(" CONC ").Append(first).Append('\n');
+            AppendValue(builder.Append(" CONC "), first, ValueIsPointer, version).Append('\n');
         }
 
         while (newline >= 0)
@@ -266,12 +267,22 @@ public sealed class GedcomStructure
             builder.Append(" CONT");
             if (!segment.IsEmpty)
             {
-                builder.Append(' ').Append(segment);
+                AppendValue(builder.Append(' '), segment, isPointer: false, version);
             }
 
             builder.Append('\n');
             rest = newline < 0 ? default : rest[(newline + BreakLength(rest, newline))..];
         }
+    }
+
+    private static StringBuilder AppendValue(StringBuilder builder, ReadOnlySpan<char> lineValue, bool isPointer, GedcomSpecVersion version)
+    {
+        if (GedcomValueCodec.NeedsEscape(lineValue, isPointer, version))
+        {
+            builder.Append('@');
+        }
+
+        return builder.Append(lineValue);
     }
 
     private static int BreakLength(ReadOnlySpan<char> text, int index) =>

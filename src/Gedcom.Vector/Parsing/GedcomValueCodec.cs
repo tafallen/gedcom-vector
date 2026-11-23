@@ -38,21 +38,26 @@ internal static class GedcomValueCodec
     }
 
     /// <summary>
+    /// The per-line form of <see cref="Decode"/> for a <c>CONT</c> or <c>CONC</c> line value: a segment starting with
+    /// <c>@@</c> loses its first <c>@</c>. Every line value is escaped on its own, so each continuation line is
+    /// decoded on its own too.
+    /// </summary>
+    public static ReadOnlySpan<char> DecodeSegment(ReadOnlySpan<char> raw) =>
+        raw.StartsWith("@@", StringComparison.Ordinal) ? raw[1..] : raw;
+
+    /// <summary>
     /// The inverse of <see cref="Decode"/>: a non-pointer value starting with <c>@</c> gains a leading <c>@</c>, except
     /// a 5.5.1 value starting <c>@#</c> (an escape sequence such as a calendar escape), which stays verbatim.
     /// </summary>
-    public static string? Encode(string? value, bool isPointer, GedcomSpecVersion version)
-    {
-        if (isPointer || value is null || !value.StartsWith('@'))
-        {
-            return value;
-        }
+    public static string? Encode(string? value, bool isPointer, GedcomSpecVersion version) =>
+        value is not null && NeedsEscape(value, isPointer, version) ? "@" + value : value;
 
-        if (version == GedcomSpecVersion.Gedcom551 && value.StartsWith("@#", StringComparison.Ordinal))
-        {
-            return value;
-        }
-
-        return "@" + value;
-    }
+    /// <summary>
+    /// True when the line value <paramref name="value"/> (the first line of a value, or one continuation segment)
+    /// must gain a leading <c>@</c> when written; see <see cref="Encode"/>.
+    /// </summary>
+    public static bool NeedsEscape(ReadOnlySpan<char> value, bool isPointer, GedcomSpecVersion version) =>
+        !isPointer
+        && value.StartsWith('@')
+        && !(version == GedcomSpecVersion.Gedcom551 && value.StartsWith("@#", StringComparison.Ordinal));
 }

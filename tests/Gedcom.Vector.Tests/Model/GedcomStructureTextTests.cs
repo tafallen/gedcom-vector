@@ -115,21 +115,68 @@ public class GedcomStructureTextTests
     }
 
     [Theory]
-    [InlineData("@@x")]
-    [InlineData("@@I1@")]
-    [InlineData("@I1@")]
-    [InlineData("@VOID@")]
-    [InlineData("@@#DJULIAN@")]
-    [InlineData("@#DJULIAN@")]
-    [InlineData("a@@b")]
-    [InlineData("@@@@")]
-    [InlineData("@")]
-    [InlineData("@@")]
-    public void RoundTripsAtSignValues(string raw)
+    [InlineData("@@x", "5.5.1")]
+    [InlineData("@@I1@", "5.5.1")]
+    [InlineData("@I1@", "5.5.1")]
+    [InlineData("@VOID@", "5.5.1")]
+    [InlineData("@@#DJULIAN@", "5.5.1")]
+    [InlineData("@#DJULIAN@", "5.5.1")]
+    [InlineData("a@@b", "5.5.1")]
+    [InlineData("@@@@", "5.5.1")]
+    [InlineData("@", "5.5.1")]
+    [InlineData("@@", "5.5.1")]
+    [InlineData("@@x", "7.0")]
+    [InlineData("@@I1@", "7.0")]
+    [InlineData("@I1@", "7.0")]
+    [InlineData("@VOID@", "7.0")]
+    [InlineData("@@#DJULIAN@", "7.0")]
+    [InlineData("a@@b", "7.0")]
+    [InlineData("@@@@", "7.0")]
+    [InlineData("@", "7.0")]
+    [InlineData("@@", "7.0")]
+    public void RoundTripsAtSignValues(string raw, string version)
     {
-        foreach (var record in Records("0 _X " + raw + "\n1 _Y " + raw + "\n1 _Z\n2 CONT " + raw + "\n"))
+        var text = "0 _X " + raw + "\n1 _Y " + raw + "\n1 _Z\n2 CONT " + raw + "\n2 CONC " + raw + "\n0 _W\n1 CONC " + raw + "\n1 CONT " + raw + "\n";
+        foreach (var record in Records(text, version))
         {
             AssertRoundTrips(record);
+        }
+    }
+
+    [Theory]
+    [InlineData("a\n@I1@", "5.5.1", "0 _X a\n1 CONT @@I1@\n")]
+    [InlineData("a\n@I1@", "7.0", "0 _X a\n1 CONT @@I1@\n")]
+    [InlineData("a\n@@x", "5.5.1", "0 _X a\n1 CONT @@@x\n")]
+    [InlineData("a\n@@x", "7.0", "0 _X a\n1 CONT @@@x\n")]
+    [InlineData("a\n@#DJULIAN@ 1700", "5.5.1", "0 _X a\n1 CONT @#DJULIAN@ 1700\n")]
+    [InlineData("a\n@#DJULIAN@ 1700", "7.0", "0 _X a\n1 CONT @@#DJULIAN@ 1700\n")]
+    [InlineData("@x\n@y", "7.0", "0 _X @@x\n1 CONT @@y\n")]
+    public void EscapesEachContinuationLineOnItsOwn(string value, string version, string expected)
+    {
+        var specVersion = version == "7.0" ? GedcomSpecVersion.Gedcom70 : GedcomSpecVersion.Gedcom551;
+        var structure = new GedcomStructure { Tag = "_X", Value = value };
+
+        var text = structure.ToGedcomText(specVersion);
+
+        Assert.Equal(expected, text);
+        StructureAssert.Equal(structure, GedcomStructure.ParseGedcomText(text, specVersion));
+        var read = Records(text, version)[1];
+        Assert.Equal(value, read.Value);
+        Assert.False(read.ValueIsPointer);
+    }
+
+    [Theory]
+    [InlineData("0 _X a\n1 CONT @@I1@\n", "a\n@I1@")]
+    [InlineData("0 _X a\n1 CONC @@b\n", "a@b")]
+    [InlineData("0 _X a\n1 CONC b@@c\n", "ab@@c")]
+    [InlineData("0 _X\n1 CONC @@@x\n", "@@x")]
+    [InlineData("0 _X\n1 CONC @@x\n1 CONC @@y\n", "@x@y")]
+    [InlineData("0 _X\n1 CONT @@x\n", "\n@x")]
+    public void DecodesEachContinuationLineOnItsOwn(string text, string expected)
+    {
+        foreach (var version in new[] { "5.5.1", "7.0" })
+        {
+            Assert.Equal(expected, Records(text, version)[1].Value);
         }
     }
 

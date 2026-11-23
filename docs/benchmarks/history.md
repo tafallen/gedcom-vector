@@ -51,3 +51,10 @@ One row per benchmark per checkpoint, appended by `tools/Run-Benchmarks.ps1`. Th
 | 2026-11-23 | c5b9d64 | Plan 2 Task 8: text round-trip API, shared decode | QueryChildrenFluent | 22.85 ns | 64 B | +1.0% |
 | 2026-11-23 | c5b9d64 | Plan 2 Task 8: text round-trip API, shared decode | CreateTreeContext | 1.229 ms | 1,039,858 B | +28.2% |
 | 2026-11-23 | c5b9d64 | Plan 2 Task 8: text round-trip API, shared decode | MeasureReadingStructures | 6.543 ms | 8,374,390 B | -1.0% |
+| 2026-11-23 | 867ef17 | Plan 2 close-out | MeasureParsingGedcomVector | 3.055 ms | 2,681,504 B | -6.1% |
+| 2026-11-23 | 867ef17 | Plan 2 close-out | MeasureExporting | 1.452 ms | 4,792,947 B | -5.8% |
+| 2026-11-23 | 867ef17 | Plan 2 close-out | MeasureExportingContext | 1.503 ms | 4,792,977 B | +2.4% |
+| 2026-11-23 | 867ef17 | Plan 2 close-out | QueryChildrenLinq | 7.277 us | 600 B | -2.6% |
+| 2026-11-23 | 867ef17 | Plan 2 close-out | QueryChildrenFluent | 23.46 ns | 64 B | +3.7% |
+| 2026-11-23 | 867ef17 | Plan 2 close-out | CreateTreeContext | 1.229 ms | 1,039,895 B | +28.2% |
+| 2026-11-23 | 867ef17 | Plan 2 close-out | MeasureReadingStructures | 6.660 ms | 8,374,389 B | +0.7% |

@@ -31,6 +31,7 @@ public class LineAccountingTests
         {
             var report = Check(file, failOnError: true);
             Assert.True(report.Problems.Count == 0, report.Describe());
+            Assert.True(report.LineCount > 0, report.FileName + " produced no accounted lines.");
         }
     }
 
@@ -60,6 +61,11 @@ public class LineAccountingTests
         }
 
         var problems = new List<string>();
+        if (LineCountProblem(accounting.LineCount, PhysicalLineCount(path)) is { } countProblem)
+        {
+            problems.Add(countProblem);
+        }
+
         for (var line = 1; line <= accounting.LineCount; line++)
         {
             if (accounting[line] is not { } disposition)
@@ -120,7 +126,80 @@ public class LineAccountingTests
     private static string Describe(int line, string what) => "line " + line.ToString(CultureInfo.InvariantCulture) + ": " + what;
 
     // Only the structure's own tag, never a value or an xref.
-    private static string TagOf(GedcomStructure structure) => structure.Tag.Length == 0 ? "?" : structure.Tag;
+    // Printed only when it looks like a real tag (it can be arbitrary text on a malformed line).
+    internal static string TagOf(GedcomStructure structure) => IsSafeTag(structure.Tag) ? structure.Tag : "?";
+
+    private static bool IsSafeTag(string tag)
+    {
+        if (tag.Length is 0 or > 15 || !(tag[0] is (>= 'A' and <= 'Z') or '_'))
+        {
+            return false;
+        }
+
+        foreach (var c in tag)
+        {
+            if (!(c is (>= 'A' and <= 'Z') or (>= '0' and <= '9') or '_'))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // Counts physical lines independently of GedcomLineReader: terminators are CRLF, lone CR and LF; a final
+    // unterminated line counts, an empty segment after the final terminator does not.
+    internal static int CountLines(string text)
+    {
+        var count = 0;
+        var inLine = false;
+        for (var i = 0; i < text.Length; i++)
+        {
+            var c = text[i];
+            if (c == '\r' || c == '\n')
+            {
+                count++;
+                inLine = false;
+                if (c == '\r' && i + 1 < text.Length && text[i + 1] == '\n')
+                {
+                    i++;
+                }
+            }
+            else
+            {
+                inLine = true;
+            }
+        }
+
+        return inLine ? count + 1 : count;
+    }
+
+    private static int PhysicalLineCount(string path)
+    {
+        using var stream = File.OpenRead(path);
+        var encoding = GedcomEncodingDetector.Detect(stream);
+        var bytes = File.ReadAllBytes(path);
+        var decoder = encoding.Encoding ?? System.Text.Encoding.Latin1;
+        return CountLines(decoder.GetString(bytes, encoding.PreambleLength, bytes.Length - encoding.PreambleLength));
+    }
+
+    // Counts only; null when the accounted count matches the physical count.
+    internal static string? LineCountProblem(int accounted, int physical) =>
+        accounted == physical
+            ? null
+            : "accounted line count " + accounted.ToString(CultureInfo.InvariantCulture)
+                + " differs from physical line count " + physical.ToString(CultureInfo.InvariantCulture);
+
+    [Fact]
+    public void LineCountCheckBitesOnADroppedTail()
+    {
+        Assert.Null(LineCountProblem(10, 10));
+        Assert.NotNull(LineCountProblem(9, 10));
+        Assert.Equal(3, CountLines("a\r\nb\rc\n"));
+        Assert.Equal(4, CountLines("a\nb\n\nc"));
+        Assert.Equal(0, CountLines(string.Empty));
+        Assert.Equal(2, CountLines("a\n\n"));
+    }
 
     private static void Collect(GedcomStructure root, HashSet<GedcomStructure> into)
     {

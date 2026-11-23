@@ -58,3 +58,10 @@ One row per benchmark per checkpoint, appended by `tools/Run-Benchmarks.ps1`. Th
 | 2026-11-23 | 867ef17 | Plan 2 close-out | QueryChildrenFluent | 23.46 ns | 64 B | +3.7% |
 | 2026-11-23 | 867ef17 | Plan 2 close-out | CreateTreeContext | 1.229 ms | 1,039,895 B | +28.2% |
 | 2026-11-23 | 867ef17 | Plan 2 close-out | MeasureReadingStructures | 6.660 ms | 8,374,389 B | +0.7% |
+| 2026-11-23 | 375772f | Plan 2 after final fix wave | MeasureParsingGedcomVector | 3.091 ms | 2,681,474 B | -5.0% |
+| 2026-11-23 | 375772f | Plan 2 after final fix wave | MeasureExporting | 1.504 ms | 4,793,153 B | -2.4% |
+| 2026-11-23 | 375772f | Plan 2 after final fix wave | MeasureExportingContext | 1.497 ms | 4,792,941 B | +2.1% |
+| 2026-11-23 | 375772f | Plan 2 after final fix wave | QueryChildrenLinq | 7.367 us | 600 B | -1.4% |
+| 2026-11-23 | 375772f | Plan 2 after final fix wave | QueryChildrenFluent | 22.51 ns | 64 B | -0.5% |
+| 2026-11-23 | 375772f | Plan 2 after final fix wave | CreateTreeContext | 1.223 ms | 1,039,881 B | +27.6% |
+| 2026-11-23 | 375772f | Plan 2 after final fix wave | MeasureReadingStructures | 6.675 ms | 8,374,390 B | +1.0% |

@@ -6,8 +6,9 @@ Runs the smoke app as a Native AOT binary and as a JIT binary over a corpus and 
 .DESCRIPTION
 Publishes tests/Gedcom.Vector.AotSmoke twice: once with PublishAot=true into artifacts/aot (the publish log is
 scanned and any "warning ILnnnn" fails the run) and once with PublishAot=false into artifacts/jit. It then runs both
-binaries over every selected file in each corpus directory for each export target (none, 5.5.1, 7.0), plus two
-failure-path checks (a missing input must exit 3, a .txt input must exit 4). For every run the exit code, the stdout
+binaries over every selected file in each corpus directory for each export target (none, 5.5.1, 7.0), runs the new
+pipeline (--structures) over every .ged file, plus three failure-path checks (a missing input must exit 3, a .txt
+input must exit 4, a .gdz input in --structures mode must exit 4). For every run the exit code, the stdout
 summary and the bytes of the output file (compared by SHA-256) must be identical between the two binaries. A corpus
 file must also exit 0. One line per comparison is printed (file name, target, match or DIFF); file contents are never
 printed. stderr must also be identical. The script exits 0 only if everything matches and the AOT publish logged no IL warnings.
@@ -132,7 +133,10 @@ foreach ($dir in $Corpus) {
     } | Sort-Object Name
     foreach ($file in $files) {
         foreach ($t in $targets) {
-            $runs.Add([pscustomobject]@{ Name = $file.Name; Input = $file.FullName; Target = $t; Expected = 0 })
+            $runs.Add([pscustomobject]@{ Name = $file.Name; Input = $file.FullName; Target = $t; Structures = $false; Expected = 0 })
+        }
+        if ($file.Extension -ieq '.ged') {
+            $runs.Add([pscustomobject]@{ Name = $file.Name; Input = $file.FullName; Target = $null; Structures = $true; Expected = 0 })
         }
     }
 }
@@ -140,14 +144,17 @@ if ($runs.Count -eq 0) { Fail 'No corpus files selected.' }
 
 $txtInput = Join-Path $artifacts 'not-a-gedcom.txt'
 Set-Content -Path $txtInput -Value 'plain text'
-$runs.Add([pscustomobject]@{ Name = '(missing input)'; Input = (Join-Path $artifacts 'does-not-exist.ged'); Target = $null; Expected = 3 })
-$runs.Add([pscustomobject]@{ Name = '(.txt input)'; Input = $txtInput; Target = $null; Expected = 4 })
+$runs.Add([pscustomobject]@{ Name = '(missing input)'; Input = (Join-Path $artifacts 'does-not-exist.ged'); Target = $null; Structures = $false; Expected = 3 })
+$runs.Add([pscustomobject]@{ Name = '(.txt input)'; Input = $txtInput; Target = $null; Structures = $false; Expected = 4 })
+$gdzSample = Join-Path $repoRoot 'tests/corpus/smoke/sample-70.gdz'
+if (-not (Test-Path -LiteralPath $gdzSample)) { Fail "Smoke corpus file not found: $gdzSample" }
+$runs.Add([pscustomobject]@{ Name = '(.gdz structures)'; Input = $gdzSample; Target = $null; Structures = $true; Expected = 4 })
 
 $diffs = 0
 $index = 0
 foreach ($run in $runs) {
     $index++
-    $targetLabel = if ($run.Target) { $run.Target } else { 'none' }
+    $targetLabel = if ($run.Structures) { 'structures' } elseif ($run.Target) { $run.Target } else { 'none' }
     $results = @{}
     foreach ($build in @(@{ Id = 'aot'; Exe = $aotExe }, @{ Id = 'jit'; Exe = $jitExe })) {
         $outDir = Join-Path $outRoot $build.Id
@@ -155,6 +162,7 @@ foreach ($run in $runs) {
         $outFile = Join-Path $outDir ("{0:D3}.out" -f $index)
         $arguments = @($run.Input, $outFile)
         if ($run.Target) { $arguments += @('--target', $run.Target) }
+        if ($run.Structures) { $arguments += '--structures' }
         $r = Invoke-Smoke $build.Exe $arguments
         $hash = if (Test-Path $outFile) { (Get-FileHash -Algorithm SHA256 -Path $outFile).Hash } else { $null }
         $results[$build.Id] = [pscustomobject]@{ Exit = $r.Exit; Stdout = $r.Stdout; Stderr = $r.Stderr; Hash = $hash }
@@ -170,11 +178,11 @@ foreach ($run in $runs) {
     if ($a.Hash -ne $j.Hash) { $problems.Add('output bytes differ') }
 
     if ($problems.Count -eq 0) {
-        Write-Host ("{0,-28} {1,-6} match (exit {2})" -f $run.Name, $targetLabel, $a.Exit)
+        Write-Host ("{0,-28} {1,-10} match (exit {2})" -f $run.Name, $targetLabel, $a.Exit)
     }
     else {
         $diffs++
-        Write-Host ("{0,-28} {1,-6} DIFF ({2})" -f $run.Name, $targetLabel, ($problems -join '; '))
+        Write-Host ("{0,-28} {1,-10} DIFF ({2})" -f $run.Name, $targetLabel, ($problems -join '; '))
     }
 }
 

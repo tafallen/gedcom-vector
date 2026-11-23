@@ -79,9 +79,6 @@ internal sealed class GedcomStructureReader
             case GedcomLineKind.NoLevel:
                 ProcessNoLevel(line, truncated);
                 break;
-            case GedcomLineKind.NoTag:
-                ProcessNoTag(line, truncated);
-                break;
             default:
                 ProcessStructure(line, truncated);
                 break;
@@ -115,14 +112,8 @@ internal sealed class GedcomStructureReader
         Account(LineDispositionKind.Folded, _open[_receiverLevel], null);
     }
 
-    private void ProcessNoTag(GedcomLine line, bool truncated)
-    {
-        var path = BuildPath(Math.Min(line.Level, _open.Count), null);
-        AddLineFlags(line, truncated, path, null);
-        var missing = Add(GedcomDiagnosticCode.MissingTag, path, null);
-        Account(LineDispositionKind.Diagnostic, null, missing);
-    }
-
+    // Structure and NoTag lines. A NoTag line becomes a placeholder structure with an empty tag at its level, so the
+    // lines after it stay under the right parent and its xref is kept.
     private void ProcessStructure(GedcomLine line, bool truncated)
     {
         var level = line.Level;
@@ -169,12 +160,14 @@ internal sealed class GedcomStructureReader
         Push(structure);
         _receiverLevel = level;
 
+        var tagless = line.Kind == GedcomLineKind.NoTag;
         var xrefOnSubstructure = level > 0 && !line.Xref.IsEmpty;
-        if (truncated || NeedsLeadingWhitespace(line) || skipped || line.XrefMalformed || line.TagInvalid || xrefOnSubstructure || isContinuation)
+        if (tagless || truncated || NeedsLeadingWhitespace(line) || skipped || line.XrefMalformed || line.TagInvalid || xrefOnSubstructure || isContinuation)
         {
             var path = BuildPath(_open.Count, null);
             AddLineFlags(line, truncated, path, structure.Tag);
             if (skipped) Add(GedcomDiagnosticCode.LevelSkipped, path, structure.Tag);
+            if (tagless) Add(GedcomDiagnosticCode.MissingTag, path, null);
             if (line.XrefMalformed) Add(GedcomDiagnosticCode.MalformedXref, path, structure.Tag);
             if (line.TagInvalid) Add(GedcomDiagnosticCode.InvalidTag, path, structure.Tag);
             if (xrefOnSubstructure) Add(GedcomDiagnosticCode.XrefOnSubstructure, path, structure.Tag);

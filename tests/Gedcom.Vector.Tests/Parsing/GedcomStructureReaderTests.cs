@@ -266,7 +266,7 @@ public class GedcomStructureReaderTests
     [InlineData("0 @N1@ NOTE first\nsecond line\n1 CONT third\nfourth\n", "NOTE", "first\nsecond line\nthird\nfourth", 2)]
     [InlineData("0 @I1@ INDI\n1 NOTE a\nb\n1 BIRT\n", "NOTE", "a\nb", 1)]
     [InlineData("0 @I1@ INDI\n1 NOTE\nb\n", "NOTE", "\nb", 1)]
-    [InlineData("0 @I1@ INDI\n1 NOTE a\n2\n\n   b c \n", "NOTE", "a\nb c ", 1)]
+    [InlineData("0 @I1@ INDI\n1 NOTE a\n\n   b c \n", "NOTE", "a\nb c ", 1)]
     [InlineData("0 @I1@ INDI\n1 NOTE a\n2 SOUR s\n2 CONT b\nlost\n", "NOTE", "a\nb\nlost", 1)]
     public void AppendsLineWithoutLevelToPreviousValue(string text, string tag, string expected, int expectedWarnings)
     {
@@ -319,20 +319,93 @@ public class GedcomStructureReaderTests
     }
 
     [Fact]
-    public void ReportsMissingTagAsDiagnosticOnly()
+    public void KeepsTaglessLineAsPlaceholderStructure()
     {
         var result = Read("0 @I1@ INDI\n1 NOTE a\n2\n1 @X1@\n1 BIRT\n");
 
+        var indi = Assert.Single(result.Records);
+        Assert.Equal(["NOTE", "", "BIRT"], indi.Children.ConvertAll(c => c.Tag));
+        var note = indi.Children[0];
+        Assert.Equal("a", note.Value);
+        var underNote = Assert.Single(note.Children);
+        Assert.Equal("", underNote.Tag);
+        Assert.Null(underNote.Xref);
+        Assert.Null(underNote.Value);
+        Assert.Equal(3, underNote.SourceLine);
+        var withXref = indi.Children[1];
+        Assert.Equal("@X1@", withXref.Xref);
+        Assert.Null(withXref.Value);
+        Assert.Equal(4, withXref.SourceLine);
+        Assert.Empty(withXref.Children);
+
+        Assert.Equal(new LineDisposition(LineDispositionKind.Structure, underNote, null), result.Accounting[3]);
+        Assert.Equal(new LineDisposition(LineDispositionKind.Structure, withXref, null), result.Accounting[4]);
         Assert.Equal(2, result.Count(GedcomDiagnosticCode.MissingTag));
-        Assert.Equal(2, result.Diagnostics.Count);
-        Assert.Equal(["NOTE", "BIRT"], result.Records[0].Children.ConvertAll(c => c.Tag));
-        Assert.Equal("a", result.Records[0].Children[0].Value);
-        var disposition = result.Accounting[3]!.Value;
-        Assert.Equal(LineDispositionKind.Diagnostic, disposition.Kind);
-        Assert.Same(result.Diagnostics[0], disposition.Diagnostic);
-        Assert.Equal("@I1@", result.Diagnostics[0].RecordXref);
-        Assert.Equal("INDI.NOTE", result.Diagnostics[0].TagPath);
-        Assert.Equal("INDI", result.Diagnostics[1].TagPath);
+        Assert.Equal(1, result.Count(GedcomDiagnosticCode.XrefOnSubstructure));
+        Assert.Equal(3, result.Diagnostics.Count);
+        AssertDiagnostic(result.Diagnostics[0], GedcomDiagnosticCode.MissingTag, 3, "@I1@", "INDI.NOTE.?");
+        AssertDiagnostic(result.Diagnostics[1], GedcomDiagnosticCode.MissingTag, 4, "@I1@", "INDI.?");
+        Assert.Equal(GedcomDiagnosticSeverity.Warning, result.Diagnostics[0].Severity);
+    }
+
+    [Fact]
+    public void ChildrenAfterTaglessLineStayUnderIt()
+    {
+        var result = Read(
+            "0 @I1@ INDI\n1 NAME A /x/\n0 @I9@\n1 NAME B /y/\n1 BIRT\n2 DATE 1800\n2\n3 PLAC p\n2 DATE 1900\nstray\n0 TRLR\n");
+
+        Assert.Equal(["INDI", "", "TRLR"], result.Records.ConvertAll(r => r.Tag));
+        var first = result.Records[0];
+        Assert.Equal("NAME", Assert.Single(first.Children).Tag);
+        Assert.Equal("A /x/", first.Children[0].Value);
+
+        var placeholder = result.Records[1];
+        Assert.Equal("@I9@", placeholder.Xref);
+        Assert.Null(placeholder.Value);
+        Assert.Equal(3, placeholder.SourceLine);
+        Assert.Equal(["NAME", "BIRT"], placeholder.Children.ConvertAll(c => c.Tag));
+        Assert.Equal("B /y/", placeholder.Children[0].Value);
+
+        var birt = placeholder.Children[1];
+        Assert.Equal(["DATE", "", "DATE"], birt.Children.ConvertAll(c => c.Tag));
+        Assert.Equal("1800", birt.Children[0].Value);
+        Assert.Empty(birt.Children[0].Children);
+        var taglessUnderBirt = birt.Children[1];
+        Assert.Equal("PLAC", Assert.Single(taglessUnderBirt.Children).Tag);
+        Assert.Equal("1900\nstray", birt.Children[2].Value);
+
+        var missing = result.Diagnostics[0];
+        AssertDiagnostic(missing, GedcomDiagnosticCode.MissingTag, 3, "@I9@", "?");
+        AssertDiagnostic(result.Diagnostics[1], GedcomDiagnosticCode.MissingTag, 7, "@I9@", "?.BIRT.?");
+        Assert.Equal(GedcomDiagnosticCode.LineWithoutLevel, result.Diagnostics[2].Code);
+        Assert.Equal(3, result.Diagnostics.Count);
+        Assert.Equal(new LineDisposition(LineDispositionKind.Structure, placeholder, null), result.Accounting[3]);
+    }
+
+    [Fact]
+    public void LineWithoutLevelAfterTaglessLineAppendsToPlaceholder()
+    {
+        var result = Read("0 @I1@ INDI\n1 NOTE a\n2\nstray\n");
+
+        var note = Assert.Single(result.Records[0].Children);
+        Assert.Equal("a", note.Value);
+        var placeholder = Assert.Single(note.Children);
+        Assert.Equal("\nstray", placeholder.Value);
+        Assert.Equal(new LineDisposition(LineDispositionKind.Folded, placeholder, null), result.Accounting[4]);
+        AssertDiagnostic(result.Single(GedcomDiagnosticCode.LineWithoutLevel), GedcomDiagnosticCode.LineWithoutLevel, 4, "@I1@", "INDI.NOTE.?");
+    }
+
+    [Fact]
+    public void LineWithoutLevelAfterPointerAppendsWithWarning()
+    {
+        var result = Read("0 @I1@ INDI\n1 FAMC @F1@\nstray\n");
+
+        var famc = Assert.Single(result.Records[0].Children);
+        Assert.Equal("@F1@\nstray", famc.Value);
+        var warning = Assert.Single(result.Diagnostics);
+        AssertDiagnostic(warning, GedcomDiagnosticCode.LineWithoutLevel, 3, "@I1@", "INDI.FAMC");
+        Assert.Equal(GedcomDiagnosticSeverity.Warning, warning.Severity);
+        Assert.Equal(new LineDisposition(LineDispositionKind.Folded, famc, null), result.Accounting[3]);
     }
 
     [Fact]
@@ -392,7 +465,7 @@ public class GedcomStructureReaderTests
             "2 CONT b",             // 10 continuation after children
             "lost line",            // 11 no level, appended
             "",                     // 12 blank
-            "2",                    // 13 missing tag
+            "2",                    // 13 missing tag, placeholder structure
             "1 FAMC @F1@",          // 14
             "2 CONC x",             // 15 misplaced under a pointer
             "1 BIRT",               // 16
@@ -412,7 +485,7 @@ public class GedcomStructureReaderTests
             LineDispositionKind.Structure, LineDispositionKind.Structure, LineDispositionKind.Structure,
             LineDispositionKind.Folded, LineDispositionKind.Structure, LineDispositionKind.Structure,
             LineDispositionKind.Folded, LineDispositionKind.Folded, LineDispositionKind.Diagnostic,
-            LineDispositionKind.Diagnostic, LineDispositionKind.Structure, LineDispositionKind.Structure,
+            LineDispositionKind.Structure, LineDispositionKind.Structure, LineDispositionKind.Structure,
             LineDispositionKind.Structure, LineDispositionKind.Structure, LineDispositionKind.Structure,
             LineDispositionKind.Structure, LineDispositionKind.Diagnostic,
         ];

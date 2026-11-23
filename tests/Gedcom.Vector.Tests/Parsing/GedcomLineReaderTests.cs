@@ -95,6 +95,89 @@ public class GedcomLineReaderTests
         Assert.Equal([("a\u00E2", 1)], lines);
     }
 
+    private static List<(string Line, int Number, bool Truncated)> ReadAllWithFlag(string text, int bufferSize, int maxLineLength)
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(text));
+        using var reader = new GedcomLineReader(stream, Utf8, bufferSize, maxLineLength);
+        var lines = new List<(string, int, bool)>();
+        while (reader.TryReadLine(out var line, out var number))
+        {
+            lines.Add((line.ToString(), number, reader.LastLineTruncated));
+        }
+
+        return lines;
+    }
+
+    [Fact]
+    public void LongLineIsTruncatedAndRestDiscarded()
+    {
+        var lines = ReadAllWithFlag(new string('x', 66) + "\nnext", bufferSize: 4, maxLineLength: 16);
+
+        Assert.Equal([(new string('x', 16), 1, true), ("next", 2, false)], lines);
+    }
+
+    [Fact]
+    public void LineOfExactlyMaxLengthIsNotTruncated()
+    {
+        var lines = ReadAllWithFlag(new string('x', 16) + "\nnext", bufferSize: 4, maxLineLength: 16);
+
+        Assert.Equal([(new string('x', 16), 1, false), ("next", 2, false)], lines);
+    }
+
+    [Fact]
+    public void LineOfMaxLengthPlusOneIsTruncated()
+    {
+        var lines = ReadAllWithFlag(new string('x', 17) + "\nnext", bufferSize: 4, maxLineLength: 16);
+
+        Assert.Equal([(new string('x', 16), 1, true), ("next", 2, false)], lines);
+    }
+
+    [Theory]
+    [InlineData(16, "\r\n")]
+    [InlineData(17, "\r\n")]
+    [InlineData(18, "\r\n")]
+    [InlineData(40, "\r\n")]
+    [InlineData(16, "\r")]
+    [InlineData(40, "\r")]
+    public void CrLfAtTheCapOrInTheDiscardRegionIsOneTerminator(int length, string terminator)
+    {
+        var lines = ReadAllWithFlag(new string('x', length) + terminator + "next", bufferSize: 4, maxLineLength: 16);
+
+        Assert.Equal(2, lines.Count);
+        Assert.Equal(("next", 2, false), lines[1]);
+        Assert.Equal(length > 16, lines[0].Truncated);
+    }
+
+    [Fact]
+    public void OverlongFinalLineWithoutTerminatorIsTruncated()
+    {
+        var lines = ReadAllWithFlag(new string('x', 100), bufferSize: 4, maxLineLength: 16);
+
+        Assert.Equal([(new string('x', 16), 1, true)], lines);
+    }
+
+    [Fact]
+    public void ReaderCapsLineAtMaxLengthWhateverTheInputSize()
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(new string('x', 5000)));
+        using var reader = new GedcomLineReader(stream, Utf8, 4, 100);
+
+        Assert.True(reader.TryReadLine(out var line, out _));
+        Assert.Equal(100, line.Length);
+        Assert.True(reader.LastLineTruncated);
+        Assert.False(reader.TryReadLine(out _, out _));
+    }
+
+    [Fact]
+    public void RejectsBadSizesWithoutDisposingTheStream()
+    {
+        using var stream = new MemoryStream("a\n"u8.ToArray());
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new GedcomLineReader(stream, Utf8, 8, 8));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new GedcomLineReader(stream, Utf8, 1, 8));
+        Assert.True(stream.CanRead);
+    }
+
     [Fact]
     public void DisposeLeavesStreamOpenAndBlocksFurtherReads()
     {

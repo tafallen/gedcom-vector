@@ -4,14 +4,18 @@ namespace Gedcom.Vector.Parsing;
 
 /// <summary>
 /// Splits GEDCOM text into lines without allocating per line. Terminators are <c>\r\n</c>, <c>\n</c> and a lone
-/// <c>\r</c>. The reader does not own the stream it was given.
+/// <c>\r</c>. The reader does not own the stream it was given. A line longer than the maximum line length is
+/// returned truncated to that length and the rest of the physical line is discarded without being buffered.
 /// </summary>
 internal sealed class GedcomLineReader : IDisposable
 {
-    private const int DefaultBufferSize = 65536;
+    internal const int DefaultBufferSize = 65536;
+    internal const int DefaultMaxLineLength = 1_048_576;
     private static readonly char[] LineBreakChars = ['\r', '\n'];
 
     private readonly TextReader _reader;
+    private readonly int _maxCapacity;
+    private readonly int _maxLineLength;
     private char[] _buffer;
     private int _capacity;
     private int _start;
@@ -19,33 +23,60 @@ internal sealed class GedcomLineReader : IDisposable
     private int _lineNumber;
     private bool _endOfInput;
     private bool _disposed;
+    private bool _discarding;
+    private bool _skipLeadingLf;
 
     public GedcomLineReader(Stream stream, GedcomEncodingResult encoding)
-        : this(stream, encoding, DefaultBufferSize)
+        : this(stream, encoding, DefaultBufferSize, DefaultMaxLineLength)
     {
     }
 
-    internal GedcomLineReader(Stream stream, GedcomEncodingResult encoding, int initialBufferSize)
-        : this(GedcomTextReaderFactory.Create(stream, encoding), initialBufferSize)
+    internal GedcomLineReader(Stream stream, GedcomEncodingResult encoding, int initialBufferSize, int maxLineLength = DefaultMaxLineLength)
+        : this(CreateValidated(stream, encoding, initialBufferSize, maxLineLength), initialBufferSize, maxLineLength)
     {
     }
 
-    private GedcomLineReader(TextReader reader, int initialBufferSize)
+    private GedcomLineReader(TextReader reader, int initialBufferSize, int maxLineLength)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThan(initialBufferSize, 2);
         _reader = reader;
+        _maxLineLength = maxLineLength;
+        _maxCapacity = maxLineLength + 1;
         _capacity = initialBufferSize;
         _buffer = ArrayPool<char>.Shared.Rent(_capacity);
     }
 
+    // Validates before the StreamReader exists so a bad argument cannot leak it.
+    private static StreamReader CreateValidated(Stream stream, GedcomEncodingResult encoding, int initialBufferSize, int maxLineLength)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(initialBufferSize, 2);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(maxLineLength, initialBufferSize);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(maxLineLength, Array.MaxLength - 1);
+        return GedcomTextReaderFactory.Create(stream, encoding);
+    }
+
+    /// <summary>True when the line returned by the last <see cref="TryReadLine"/> call was cut at the maximum line length.</summary>
+    public bool LastLineTruncated { get; private set; }
+
     /// <summary>
     /// Reads the next line. <paramref name="line"/> excludes its terminator and is valid only until the next call
-    /// to this method or <see cref="Dispose"/>. <paramref name="lineNumber"/> is 1-based.
+    /// to this method or <see cref="Dispose"/>. <paramref name="lineNumber"/> is 1-based. A line longer than the
+    /// maximum is returned cut to that length with <see cref="LastLineTruncated"/> set.
     /// </summary>
     /// <returns>False when no lines remain.</returns>
     public bool TryReadLine(out ReadOnlySpan<char> line, out int lineNumber)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        LastLineTruncated = false;
+
+        if (_skipLeadingLf)
+        {
+            SkipLeadingLf();
+        }
+
+        if (_discarding)
+        {
+            DiscardRestOfLine();
+        }
 
         int scanFrom = _start;
         while (true)
@@ -64,8 +95,16 @@ internal sealed class GedcomLineReader : IDisposable
                     }
                     else if (!_endOfInput)
                     {
-                        // A trailing \r may be the first half of \r\n; wait for the next character.
-                        needMore = true;
+                        if (_end - _start >= _maxCapacity)
+                        {
+                            // The buffer cannot grow to show the next character: take the \r now and swallow a following \n later.
+                            _skipLeadingLf = true;
+                        }
+                        else
+                        {
+                            // A trailing \r may be the first half of \r\n; wait for the next character.
+                            needMore = true;
+                        }
                     }
                 }
 
@@ -82,6 +121,16 @@ internal sealed class GedcomLineReader : IDisposable
             else
             {
                 scanFrom = _end;
+                if (_end - _start > _maxLineLength)
+                {
+                    line = _buffer.AsSpan(_start, _maxLineLength);
+                    _start += _maxLineLength;
+                    _discarding = true;
+                    LastLineTruncated = true;
+                    lineNumber = ++_lineNumber;
+                    return true;
+                }
+
                 if (_endOfInput)
                 {
                     if (_start < _end)
@@ -102,6 +151,55 @@ internal sealed class GedcomLineReader : IDisposable
         }
     }
 
+    private void SkipLeadingLf()
+    {
+        if (_start == _end && !_endOfInput)
+        {
+            Fill();
+        }
+
+        if (_start < _end && _buffer[_start] == '\n')
+        {
+            _start++;
+        }
+
+        _skipLeadingLf = false;
+    }
+
+    // Drops the remainder of an over-long line up to and including its terminator without keeping it.
+    private void DiscardRestOfLine()
+    {
+        while (true)
+        {
+            int index = _buffer.AsSpan(_start, _end - _start).IndexOfAny(LineBreakChars);
+            if (index < 0)
+            {
+                _start = _end;
+                Fill();
+                if (_endOfInput)
+                {
+                    break;
+                }
+
+                continue;
+            }
+
+            int position = _start + index;
+            if (_buffer[position] == '\r' && position + 1 == _end && !_endOfInput)
+            {
+                _start = position;
+                Fill();
+                continue;
+            }
+
+            int terminatorLength = _buffer[position] == '\r' && position + 1 < _end && _buffer[position + 1] == '\n' ? 2 : 1;
+            _start = position + terminatorLength;
+            break;
+        }
+
+        _discarding = false;
+    }
+
     // Reads more characters, compacting or growing the buffer first. Returns how far unread data moved left.
     private int Fill()
     {
@@ -115,7 +213,7 @@ internal sealed class GedcomLineReader : IDisposable
 
         if (_end == _capacity)
         {
-            int newCapacity = _capacity * 2;
+            int newCapacity = (int)Math.Min((long)_capacity * 2, _maxCapacity);
             char[] bigger = ArrayPool<char>.Shared.Rent(newCapacity);
             Array.Copy(_buffer, bigger, _end);
             ArrayPool<char>.Shared.Return(_buffer);

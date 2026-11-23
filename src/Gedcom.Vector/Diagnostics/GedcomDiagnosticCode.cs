@@ -36,6 +36,9 @@ public enum GedcomDiagnosticCode
     /// <summary>A CONC or CONT appeared after other child structures of its parent (Info).</summary>
     ContinuationAfterChildren = 1011,
 
+    /// <summary>A line exceeded the maximum line length; the excess was discarded (Warning).</summary>
+    LineTooLong = 1012,
+
     /// <summary>The document has no HEAD record (Warning).</summary>
     MissingHeader = 2001,
 

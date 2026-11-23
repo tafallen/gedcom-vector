@@ -20,6 +20,7 @@ Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.XrefOnSubstructure = 1008 -> Gedc
 Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.LevelSkipped = 1009 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
 Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.ContinuationMisplaced = 1010 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
 Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.ContinuationAfterChildren = 1011 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
+Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.LineTooLong = 1012 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
 Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.MissingHeader = 2001 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
 Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.UnknownVersion = 2002 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode
 Gedcom.Vector.Diagnostics.GedcomDiagnosticCode.NonUtf8Encoding = 2003 -> Gedcom.Vector.Diagnostics.GedcomDiagnosticCode

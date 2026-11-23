@@ -11,6 +11,7 @@ internal sealed class GedcomLineReader : IDisposable
 {
     internal const int DefaultBufferSize = 65536;
     internal const int DefaultMaxLineLength = 1_048_576;
+    private const int TextReaderBufferSize = 4096;
     private static readonly char[] LineBreakChars = ['\r', '\n'];
 
     private readonly TextReader _reader;
@@ -34,6 +35,18 @@ internal sealed class GedcomLineReader : IDisposable
     internal GedcomLineReader(Stream stream, GedcomEncodingResult encoding, int initialBufferSize, int maxLineLength = DefaultMaxLineLength)
         : this(CreateValidated(stream, encoding, initialBufferSize, maxLineLength), initialBufferSize, maxLineLength)
     {
+    }
+
+    /// <summary>Reads lines from <paramref name="reader"/>, which this instance takes ownership of and disposes.</summary>
+    internal GedcomLineReader(TextReader reader)
+        : this(Validated(reader), TextReaderBufferSize, DefaultMaxLineLength)
+    {
+    }
+
+    private static TextReader Validated(TextReader reader)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+        return reader;
     }
 
     private GedcomLineReader(TextReader reader, int initialBufferSize, int maxLineLength)

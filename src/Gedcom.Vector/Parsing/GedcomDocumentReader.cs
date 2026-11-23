@@ -145,7 +145,7 @@ internal static class GedcomDocumentReader
 
     // ANSEL first (CONC folding already happened, so a split diacritic composes), then the pointer flag on the
     // undecoded-escape value, then the escape. Pointers are kept verbatim; "@@I1@" is the text "@I1@", not a pointer.
-    private static void DecodeValues(GedcomStructure record, bool isAnsel, GedcomSpecVersion version, List<GedcomStructure> work)
+    internal static void DecodeValues(GedcomStructure record, bool isAnsel, GedcomSpecVersion version, List<GedcomStructure> work)
     {
         work.Clear();
         work.Add(record);

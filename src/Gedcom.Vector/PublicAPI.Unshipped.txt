@@ -60,6 +60,9 @@ Gedcom.Vector.Model.GedcomStructure.ExtensionUri.set -> void
 Gedcom.Vector.Model.GedcomStructure.GedcomStructure() -> void
 Gedcom.Vector.Model.GedcomStructure.SourceLine.get -> int?
 Gedcom.Vector.Model.GedcomStructure.SourceLine.set -> void
+static Gedcom.Vector.Model.GedcomStructure.ParseGedcomText(string! text) -> Gedcom.Vector.Model.GedcomStructure!
+static Gedcom.Vector.Model.GedcomStructure.ParseGedcomText(string! text, Gedcom.Vector.GedcomSpecVersion version) -> Gedcom.Vector.Model.GedcomStructure!
+Gedcom.Vector.Model.GedcomStructure.ToGedcomText(Gedcom.Vector.GedcomSpecVersion version, int baseLevel = 0) -> string!
 Gedcom.Vector.Model.GedcomStructure.Tag.get -> string!
 Gedcom.Vector.Model.GedcomStructure.Tag.set -> void
 Gedcom.Vector.Model.GedcomStructure.Value.get -> string?

@@ -30,6 +30,7 @@ public sealed class GedcomStructure
     public List<GedcomStructure> Children { get; } = [];
 
     private const int MaxBaseLevel = 99;
+    private const int MaxLevel = 999;
 
     /// <summary>
     /// Writes this structure and its substructures as GEDCOM text, one line per structure, each ending with a line feed:
@@ -43,7 +44,15 @@ public sealed class GedcomStructure
     /// <param name="version">The GEDCOM version whose escaping rules apply.</param>
     /// <param name="baseLevel">The level of this structure's line, 0 to 99; substructures follow at deeper levels.</param>
     /// <returns>The GEDCOM text.</returns>
+    /// <remarks>
+    /// <c>\r\n</c>, a lone <c>\r</c> and <c>\n</c> in a value are all line breaks (as the reader treats them), so a
+    /// value never injects a line, and it reads back with <c>\n</c>.
+    /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="baseLevel"/> is outside 0 to 99.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// A line would need a level above 999, or a <see cref="Tag"/> or <see cref="Xref"/> contains whitespace or a line
+    /// break, or an <see cref="Xref"/> is empty. The message names the tag path, never a value.
+    /// </exception>
     public string ToGedcomText(GedcomSpecVersion version, int baseLevel = 0)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(baseLevel);
@@ -55,6 +64,12 @@ public sealed class GedcomStructure
         while (stack.Count > 0)
         {
             var (structure, level) = stack.Pop();
+            if (!structure.IsWritable(level))
+            {
+                throw new InvalidOperationException(
+                    "The structure at " + FindPath(this, structure) + " cannot be written as GEDCOM text: its level is above 999, or its tag or xref is empty, or has whitespace or a line break.");
+            }
+
             structure.AppendLines(builder, level, version);
             for (var i = structure.Children.Count - 1; i >= 0; i--)
             {
@@ -90,7 +105,8 @@ public sealed class GedcomStructure
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
     /// <exception cref="FormatException">
     /// The text is empty or whitespace, holds more than one top-level structure, or has a line without a level (GV1003,
-    /// GV1004) or a level that skips (GV1009).
+    /// GV1004), a level that skips (GV1009) or a line over the reader's length cap (GV1012). The first line may be at
+    /// any level from 0 to 999.
     /// </exception>
     public static GedcomStructure ParseGedcomText(string text, GedcomSpecVersion version)
     {
@@ -101,10 +117,6 @@ public sealed class GedcomStructure
         }
 
         var baseLevel = FirstLineLevel(text);
-        if (baseLevel > MaxBaseLevel)
-        {
-            throw new FormatException("The level of the first line is above 99.");
-        }
 
         // A first line at level N is parsed under N synthetic ancestors (pointer-valued, so a leading CONT or CONC is
         // kept as a structure instead of folding into one) that are stripped again afterwards.
@@ -119,7 +131,8 @@ public sealed class GedcomStructure
         {
             if (diagnostic.Code is GedcomDiagnosticCode.LineWithoutLevel
                 or GedcomDiagnosticCode.LineWithoutLevelUnplaced
-                or GedcomDiagnosticCode.LevelSkipped)
+                or GedcomDiagnosticCode.LevelSkipped
+                or GedcomDiagnosticCode.LineTooLong)
             {
                 var line = diagnostic.Line is { } l ? Math.Max(l - baseLevel, 1) : 0;
                 throw new FormatException(string.Create(
@@ -218,9 +231,9 @@ public sealed class GedcomStructure
     private void AppendLines(StringBuilder builder, int level, GedcomSpecVersion version)
     {
         var encoded = GedcomValueCodec.Encode(Value, ValueIsPointer, version).AsSpan();
-        var newline = encoded.IndexOf('\n');
+        var newline = encoded.IndexOfAny('\r', '\n');
         var first = newline < 0 ? encoded : encoded[..newline];
-        var rest = newline < 0 ? default : encoded[(newline + 1)..];
+        var rest = newline < 0 ? default : encoded[(newline + BreakLength(encoded, newline))..];
 
         AppendLevel(builder, level);
         if (Xref is not null)
@@ -247,7 +260,7 @@ public sealed class GedcomStructure
 
         while (newline >= 0)
         {
-            newline = rest.IndexOf('\n');
+            newline = rest.IndexOfAny('\r', '\n');
             var segment = newline < 0 ? rest : rest[..newline];
             AppendLevel(builder, level + 1);
             builder.Append(" CONT");
@@ -257,8 +270,76 @@ public sealed class GedcomStructure
             }
 
             builder.Append('\n');
-            rest = newline < 0 ? default : rest[(newline + 1)..];
+            rest = newline < 0 ? default : rest[(newline + BreakLength(rest, newline))..];
         }
+    }
+
+    private static int BreakLength(ReadOnlySpan<char> text, int index) =>
+        text[index] == '\r' && index + 1 < text.Length && text[index + 1] == '\n' ? 2 : 1;
+
+    // False when this structure would write an invalid or line-injecting line (see ToGedcomText).
+    private bool IsWritable(int level)
+    {
+        if (level > MaxLevel || HasUnsafeCharacter(Tag) || (Xref is not null && (Xref.Length == 0 || HasUnsafeCharacter(Xref))))
+        {
+            return false;
+        }
+
+        if (level == MaxLevel && Value is { Length: > 0 } value && (Tag.Length == 0 || value.AsSpan().IndexOfAny('\r', '\n') >= 0))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool HasUnsafeCharacter(string text)
+    {
+        foreach (var c in text)
+        {
+            if (char.IsWhiteSpace(c))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Dot-separated tags from root to target, "?" for an empty or unsafe tag, so no value text can leak.
+    private static string FindPath(GedcomStructure root, GedcomStructure target)
+    {
+        var chain = new List<GedcomStructure>();
+        var stack = new Stack<(GedcomStructure Structure, int Depth)>();
+        stack.Push((root, 0));
+        while (stack.Count > 0)
+        {
+            var (structure, depth) = stack.Pop();
+            chain.RemoveRange(depth, chain.Count - depth);
+            chain.Add(structure);
+            if (ReferenceEquals(structure, target))
+            {
+                break;
+            }
+
+            for (var i = structure.Children.Count - 1; i >= 0; i--)
+            {
+                stack.Push((structure.Children[i], depth + 1));
+            }
+        }
+
+        var path = new StringBuilder();
+        foreach (var node in chain)
+        {
+            if (path.Length > 0)
+            {
+                path.Append('.');
+            }
+
+            path.Append(DiagnosticArguments.SafeTag(node.Tag) ?? "?");
+        }
+
+        return path.ToString();
     }
 
     private static void AppendLevel(StringBuilder builder, int level)

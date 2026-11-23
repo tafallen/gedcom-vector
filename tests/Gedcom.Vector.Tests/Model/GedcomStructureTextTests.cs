@@ -314,6 +314,105 @@ public class GedcomStructureTextTests
         Assert.Equal("x", parsed.Value);
     }
 
+    [Theory]
+    [InlineData("a\rb", "a\nb")]
+    [InlineData("x\r0 @I9@ INDI", "x\n0 @I9@ INDI")]
+    [InlineData("a\r\nb", "a\nb")]
+    [InlineData("a\n\rb", "a\n\nb")]
+    public void ToTextTreatsCarriageReturnsAsLineBreaks(string value, string expected)
+    {
+        var structure = new GedcomStructure { Tag = "NOTE", Value = value };
+
+        var parsed = GedcomStructure.ParseGedcomText(structure.ToGedcomText(GedcomSpecVersion.Gedcom70));
+
+        Assert.Equal("NOTE", parsed.Tag);
+        Assert.Equal(expected, parsed.Value);
+        Assert.Empty(parsed.Children);
+        Assert.DoesNotContain('\r', structure.ToGedcomText(GedcomSpecVersion.Gedcom70));
+    }
+
+    private static GedcomStructure Chain(int count)
+    {
+        var root = new GedcomStructure { Tag = "A" };
+        var node = root;
+        for (var i = 1; i < count; i++)
+        {
+            var child = new GedcomStructure { Tag = "A" };
+            node.Children.Add(child);
+            node = child;
+        }
+
+        return root;
+    }
+
+    [Fact]
+    public void ToTextRejectsLevelsAbove999()
+    {
+        var tooDeep = Chain(1001);
+        var exception = Assert.Throws<InvalidOperationException>(() => tooDeep.ToGedcomText(GedcomSpecVersion.Gedcom70));
+        Assert.Contains("A.A", exception.Message, StringComparison.Ordinal);
+
+        Assert.Contains("\n999 A\n", Chain(1000).ToGedcomText(GedcomSpecVersion.Gedcom70), StringComparison.Ordinal);
+        Assert.Throws<InvalidOperationException>(() => Chain(1000).ToGedcomText(GedcomSpecVersion.Gedcom70, 1));
+        Assert.Throws<InvalidOperationException>(() => Chain(998).ToGedcomText(GedcomSpecVersion.Gedcom70, 3));
+        Assert.Contains("\n999 A\n", Chain(997).ToGedcomText(GedcomSpecVersion.Gedcom70, 3), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ToTextRejectsAContinuationLineAbove999()
+    {
+        var chain = Chain(1000);
+        var last = chain;
+        while (last.Children.Count > 0)
+        {
+            last = last.Children[0];
+        }
+
+        last.Value = "a\nb";
+
+        Assert.Throws<InvalidOperationException>(() => chain.ToGedcomText(GedcomSpecVersion.Gedcom70));
+    }
+
+    [Theory]
+    [InlineData("A B", null)]
+    [InlineData("A\nB", null)]
+    [InlineData("A\rB", null)]
+    [InlineData("A\tB", null)]
+    [InlineData("NOTE", "")]
+    [InlineData("NOTE", "@X 1@")]
+    [InlineData("NOTE", "@X\n1@")]
+    public void ToTextRejectsUnsafeTagsAndXrefs(string tag, string? xref)
+    {
+        var structure = new GedcomStructure { Tag = "INDI", Children = { new GedcomStructure { Tag = tag, Xref = xref, Value = "secret" } } };
+
+        var exception = Assert.Throws<InvalidOperationException>(() => structure.ToGedcomText(GedcomSpecVersion.Gedcom70));
+
+        Assert.DoesNotContain("secret", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("INDI.", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ParseRejectsLinesOverTheLengthCap()
+    {
+        var text = "0 _X " + new string('a', 1_048_580) + "\n";
+
+        var exception = Assert.Throws<FormatException>(() => GedcomStructure.ParseGedcomText(text));
+
+        Assert.Contains("GV1012", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ParseAcceptsAFirstLineAtLevelsUpTo999()
+    {
+        var parsed = GedcomStructure.ParseGedcomText("150 _X v\n151 _Y w\n");
+
+        Assert.Equal("_X", parsed.Tag);
+        Assert.Equal("v", parsed.Value);
+        Assert.Equal("w", parsed.Children[0].Value);
+        Assert.Equal(1, parsed.SourceLine);
+        Assert.Equal("_X", GedcomStructure.ParseGedcomText("999 _X v\n").Tag);
+    }
+
     [Fact]
     public void ParseRejectsNull()
     {

@@ -178,6 +178,71 @@ public class GedcomLineReaderTests
         Assert.True(stream.CanRead);
     }
 
+    [Theory]
+    [InlineData("ab\ncd\n", 2)]
+    [InlineData("ab\ncd\n", 3)]
+    [InlineData("ab\ncd\n", 4)]
+    [InlineData("ab\ncdefgh\nij", 2)]
+    [InlineData("ab\ncdefgh\nij", 3)]
+    [InlineData("ab\ncdefgh\nij", 4)]
+    [InlineData("abcd\nx", 4)]
+    [InlineData("0123456789\nabcdefghijk\nlmnopqrstuvwxyz", 2)]
+    [InlineData("0123456789\nabcdefghijk\nlmnopqrstuvwxyz", 3)]
+    public void ReadsMultipleLinesWithTinyBuffer(string text, int bufferSize)
+    {
+        Assert.Equal(ReferenceSplit(text), ReadAll(text, bufferSize));
+    }
+
+    [Fact]
+    public void CrCrLfGivesTwoEmptyLines()
+    {
+        Assert.Equal([("", 1), ("", 2)], ReadAll("\r\r\n"));
+        Assert.Equal([("", 1), ("", 2)], ReadAll("\r\r\n", bufferSize: 2));
+    }
+
+    [Fact]
+    public void TrailingLfDoesNotAddEmptyLine()
+    {
+        Assert.Equal([("a", 1)], ReadAll("a\n"));
+    }
+
+    [Fact]
+    public void MatchesSimpleSplitterOnRandomInput()
+    {
+        var random = new Random(20261123);
+        const string alphabet = "ab\r\n";
+        for (int i = 0; i < 3000; i++)
+        {
+            var chars = new char[random.Next(0, 40)];
+            for (int c = 0; c < chars.Length; c++) chars[c] = alphabet[random.Next(alphabet.Length)];
+            var text = new string(chars);
+            int bufferSize = random.Next(2, 9);
+
+            Assert.True(ReferenceSplit(text).SequenceEqual(ReadAll(text, bufferSize)), $"case {i} buffer {bufferSize}");
+        }
+    }
+
+    private static List<(string Line, int Number)> ReferenceSplit(string text)
+    {
+        var lines = new List<(string, int)>();
+        int start = 0;
+        int i = 0;
+        while (i < text.Length)
+        {
+            if (text[i] == '\r' || text[i] == '\n')
+            {
+                lines.Add((text[start..i], lines.Count + 1));
+                if (text[i] == '\r' && i + 1 < text.Length && text[i + 1] == '\n') i++;
+                start = i + 1;
+            }
+
+            i++;
+        }
+
+        if (start < text.Length) lines.Add((text[start..], lines.Count + 1));
+        return lines;
+    }
+
     [Fact]
     public void DisposeLeavesStreamOpenAndBlocksFurtherReads()
     {

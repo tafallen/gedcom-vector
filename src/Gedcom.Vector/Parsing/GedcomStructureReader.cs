@@ -126,11 +126,12 @@ internal sealed class GedcomStructureReader
         }
 
         var tagSpan = line.Tag;
+        // A parent being folded into already holds more than its own line, so its stale Value is not a pointer.
         var isContinuation = tagSpan.SequenceEqual("CONC") || tagSpan.SequenceEqual("CONT");
         if (isContinuation
             && level > 0
             && line.Xref.IsEmpty
-            && !GedcomValueCodec.IsPointer(_open[level - 1].Value))
+            && (_building[level - 1] || !GedcomValueCodec.IsPointer(_open[level - 1].Value)))
         {
             Fold(line, level, skipped, truncated);
             return;

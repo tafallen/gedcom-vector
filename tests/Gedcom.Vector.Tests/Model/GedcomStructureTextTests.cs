@@ -219,6 +219,22 @@ public class GedcomStructureTextTests
     }
 
     [Fact]
+    public void FoldsAContinuationAfterTextAppendedToAPointer()
+    {
+        var person = Records("0 @I1@ INDI\n1 FAMC @F1@\nstray\n2 CONC x\n")[1];
+        var famc = Assert.Single(person.Children);
+
+        Assert.Equal("@F1@\nstrayx", famc.Value);
+        Assert.False(famc.ValueIsPointer);
+        Assert.Empty(famc.Children);
+
+        var parsed = GedcomStructure.ParseGedcomText(person.ToGedcomText(GedcomSpecVersion.Gedcom551), GedcomSpecVersion.Gedcom551);
+        Assert.Equal("@F1@\nstrayx", Assert.Single(parsed.Children).Value);
+        Assert.Empty(parsed.Children[0].Children);
+        AssertRoundTrips(person);
+    }
+
+    [Fact]
     public void RoundTripsMisplacedContinuations()
     {
         var records = Records("0 @F1@ FAM\n1 HUSB @I1@\n2 CONT x\n2 CONC y\n0 CONT z\n0 _B\n1 NOTE a\n2 @X@ CONT q\n");

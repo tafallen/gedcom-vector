@@ -36,6 +36,16 @@ public class LineAccountingTests
     }
 
     [Fact]
+    public void ContentCheckAcceptsDoubledDelimitersBeforeTheTag()
+    {
+        var text = "0 HEAD\n1 GEDC\n2 VERS 5.5.1\n1 CHAR UTF-8\n0 @I1@  INDI\n1  NAME John /Smith/\n2 GIVN John\n0 TRLR\n";
+
+        var report = Check("sample", Encoding.UTF8.GetBytes(text), failOnError: true);
+
+        Assert.True(report.Problems.Count == 0, report.Describe());
+    }
+
+    [Fact]
     public void ContentCheckBitesOnLostContent()
     {
         var head = Split("1 NAME John /Smith/");

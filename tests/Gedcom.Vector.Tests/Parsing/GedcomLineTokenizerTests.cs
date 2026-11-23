@@ -14,6 +14,8 @@ public class GedcomLineTokenizerTests
     [InlineData("0 HEAD", 0, "", "HEAD", "", false)]
     [InlineData("1 NOTE  ", 1, "", "NOTE", " ", true)]
     [InlineData("1 NOTE a\tb", 1, "", "NOTE", "a\tb", true)]
+    [InlineData("000 HEAD", 0, "", "HEAD", "", false)]
+    [InlineData("1 BIRT   ", 1, "", "BIRT", "  ", true)]
     public void TokenizesLevelXrefTagValue(string text, int level, string xref, string tag, string value, bool hasValue)
     {
         var line = GedcomLineTokenizer.Tokenize(text);
@@ -27,6 +29,29 @@ public class GedcomLineTokenizerTests
         Assert.False(line.XrefMalformed);
         Assert.False(line.TagInvalid);
         Assert.False(line.HadLeadingWhitespace);
+        Assert.False(line.ExtraDelimiter);
+        Assert.Equal(text, line.Text.ToString());
+    }
+
+    [Theory]
+    [InlineData("1  TAG", 1, "", "TAG", "")]
+    [InlineData("0 @I1@  INDI", 0, "@I1@", "INDI", "")]
+    [InlineData("1  NAME John /Smith/", 1, "", "NAME", "John /Smith/")]
+    [InlineData("0   @I1@   INDI  x", 0, "@I1@", "INDI", " x")]
+    [InlineData("2    CONC  y", 2, "", "CONC", " y")]
+    public void TreatsRunsOfSpacesBeforeTheTagAsOneDelimiter(string text, int level, string xref, string tag, string value)
+    {
+        var line = GedcomLineTokenizer.Tokenize(text);
+
+        Assert.Equal(GedcomLineKind.Structure, line.Kind);
+        Assert.Equal(level, line.Level);
+        Assert.Equal(xref, line.Xref.ToString());
+        Assert.Equal(tag, line.Tag.ToString());
+        Assert.Equal(value, line.Value.ToString());
+        Assert.Equal(value.Length > 0, line.HasValue);
+        Assert.False(line.XrefMalformed);
+        Assert.False(line.TagInvalid);
+        Assert.True(line.ExtraDelimiter);
         Assert.Equal(text, line.Text.ToString());
     }
 
@@ -65,6 +90,8 @@ public class GedcomLineTokenizerTests
     [InlineData("1\tTAG")]
     [InlineData("-1 TAG")]
     [InlineData("1x")]
+    [InlineData("١ NAME x")]
+    [InlineData("@I1@ INDI")]
     public void ReportsNoLevel(string text)
     {
         var line = GedcomLineTokenizer.Tokenize(text);
@@ -74,17 +101,22 @@ public class GedcomLineTokenizerTests
     }
 
     [Theory]
-    [InlineData("1")]
-    [InlineData("1 ")]
-    [InlineData("0 @I1@")]
-    [InlineData("0 @I1@ ")]
-    [InlineData("1  TAG")]
-    [InlineData("0 @I1@  INDI")]
-    public void ReportsNoTag(string text)
+    [InlineData("1", 1, "", false)]
+    [InlineData("1 ", 1, "", false)]
+    [InlineData("1   ", 1, "", false)]
+    [InlineData("000", 0, "", false)]
+    [InlineData("0 @I1@", 0, "@I1@", false)]
+    [InlineData("0 @I1@ ", 0, "@I1@", false)]
+    [InlineData("0 @I1@   ", 0, "@I1@", false)]
+    [InlineData("0  @I1@", 0, "@I1@", true)]
+    public void ReportsNoTag(string text, int level, string xref, bool extraDelimiter)
     {
         var line = GedcomLineTokenizer.Tokenize(text);
 
         Assert.Equal(GedcomLineKind.NoTag, line.Kind);
+        Assert.Equal(level, line.Level);
+        Assert.Equal(xref, line.Xref.ToString());
+        Assert.Equal(extraDelimiter, line.ExtraDelimiter);
         Assert.Equal(text, line.Text.ToString());
     }
 
@@ -123,6 +155,16 @@ public class GedcomLineTokenizerTests
 
         Assert.Equal(GedcomLineKind.Structure, line.Kind);
         Assert.True(line.TagInvalid);
+    }
+
+    [Fact]
+    public void TabAfterTagStaysInTheTag()
+    {
+        var line = GedcomLineTokenizer.Tokenize("1 BIRT\tX");
+
+        Assert.Equal("BIRT\tX", line.Tag.ToString());
+        Assert.False(line.HasValue);
+        Assert.True(line.Value.IsEmpty);
     }
 
     [Theory]

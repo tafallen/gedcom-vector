@@ -19,6 +19,7 @@ internal static class DiagnosticMessages
         GedcomDiagnosticCode.ContinuationMisplaced => (GedcomDiagnosticSeverity.Warning, "The continuation tag " + TagPlaceholder + " is misplaced and was kept as an ordinary structure."),
         GedcomDiagnosticCode.ContinuationAfterChildren => (GedcomDiagnosticSeverity.Info, "The continuation tag " + TagPlaceholder + " follows other child structures."),
         GedcomDiagnosticCode.LineTooLong => (GedcomDiagnosticSeverity.Warning, "A line exceeded the maximum line length and its excess was discarded."),
+        GedcomDiagnosticCode.ExtraDelimiter => (GedcomDiagnosticSeverity.Info, "Extra spaces between the level, cross-reference identifier and tag of a line were read as one delimiter."),
         GedcomDiagnosticCode.MissingHeader => (GedcomDiagnosticSeverity.Warning, "The document has no HEAD record."),
         GedcomDiagnosticCode.UnknownVersion => (GedcomDiagnosticSeverity.Warning, "The GEDCOM version is missing or not recognised."),
         GedcomDiagnosticCode.NonUtf8Encoding => (GedcomDiagnosticSeverity.Error, "GEDCOM 7.0 requires UTF-8 encoding. Non-UTF-8 encoding detected."),

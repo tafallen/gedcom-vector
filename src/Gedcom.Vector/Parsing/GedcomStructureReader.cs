@@ -162,7 +162,7 @@ internal sealed class GedcomStructureReader
 
         var tagless = line.Kind == GedcomLineKind.NoTag;
         var xrefOnSubstructure = level > 0 && !line.Xref.IsEmpty;
-        if (tagless || truncated || NeedsLeadingWhitespace(line) || skipped || line.XrefMalformed || line.TagInvalid || xrefOnSubstructure || isContinuation)
+        if (tagless || truncated || NeedsLeadingWhitespace(line) || line.ExtraDelimiter || skipped || line.XrefMalformed || line.TagInvalid || xrefOnSubstructure || isContinuation)
         {
             var path = BuildPath(_open.Count, null);
             AddLineFlags(line, truncated, path, structure.Tag);
@@ -190,7 +190,7 @@ internal sealed class GedcomStructureReader
         }
 
         _receiverLevel = targetLevel;
-        if (truncated || NeedsLeadingWhitespace(line) || skipped || afterChildren)
+        if (truncated || NeedsLeadingWhitespace(line) || line.ExtraDelimiter || skipped || afterChildren)
         {
             var tag = isCont ? "CONT" : "CONC";
             var path = BuildPath(level, tag);
@@ -204,7 +204,8 @@ internal sealed class GedcomStructureReader
 
     private bool NeedsLeadingWhitespace(GedcomLine line) => line.HadLeadingWhitespace && !_leadingWhitespaceReported;
 
-    // Diagnostics any non-blank line can raise: a cut over-long line and the once-per-file leading whitespace note.
+    // Diagnostics any non-blank line can raise: a cut over-long line, the once-per-file leading whitespace note and
+    // the once-per-line note that extra spaces were read as one delimiter.
     private void AddLineFlags(GedcomLine line, bool truncated, string? path, string? tag)
     {
         if (truncated)
@@ -216,6 +217,11 @@ internal sealed class GedcomStructureReader
         {
             _leadingWhitespaceReported = true;
             Add(GedcomDiagnosticCode.LeadingWhitespace, path, tag);
+        }
+
+        if (line.ExtraDelimiter)
+        {
+            Add(GedcomDiagnosticCode.ExtraDelimiter, path, tag);
         }
     }
 

@@ -409,6 +409,28 @@ public class GedcomStructureReaderTests
     }
 
     [Fact]
+    public void ReadsRunsOfSpacesBeforeTheTagAsOneDelimiter()
+    {
+        var result = Read("0 @I1@  INDI\n1  NAME John /Smith/\n2   CONC  x\n1 NOTE  two\n");
+
+        var indi = Assert.Single(result.Records);
+        Assert.Equal("INDI", indi.Tag);
+        Assert.Equal("@I1@", indi.Xref);
+        Assert.Equal(["NAME", "NOTE"], indi.Children.ConvertAll(c => c.Tag));
+        Assert.Equal("John /Smith/ x", indi.Children[0].Value);
+        Assert.Equal(" two", indi.Children[1].Value);
+        Assert.Equal(new LineDisposition(LineDispositionKind.Structure, indi, null), result.Accounting[1]);
+        Assert.Equal(new LineDisposition(LineDispositionKind.Structure, indi.Children[0], null), result.Accounting[2]);
+        Assert.Equal(new LineDisposition(LineDispositionKind.Folded, indi.Children[0], null), result.Accounting[3]);
+
+        Assert.Equal(3, result.Diagnostics.Count);
+        AssertDiagnostic(result.Diagnostics[0], GedcomDiagnosticCode.ExtraDelimiter, 1, "@I1@", "INDI");
+        AssertDiagnostic(result.Diagnostics[1], GedcomDiagnosticCode.ExtraDelimiter, 2, "@I1@", "INDI.NAME");
+        AssertDiagnostic(result.Diagnostics[2], GedcomDiagnosticCode.ExtraDelimiter, 3, "@I1@", "INDI.NAME.CONC");
+        Assert.All(result.Diagnostics, d => Assert.Equal(GedcomDiagnosticSeverity.Info, d.Severity));
+    }
+
+    [Fact]
     public void ReportsOtherFlagsAndKeepsStructures()
     {
         var result = Read(" 0 @I1@ INDI\n  1 @X1@ NAME a\n1 _B!D x\n0 @bad FAM\n");

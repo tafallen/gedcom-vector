@@ -32,7 +32,8 @@ internal readonly ref struct GedcomLine
         ReadOnlySpan<char> value = default,
         bool hasValue = false,
         bool xrefMalformed = false,
-        bool tagInvalid = false)
+        bool tagInvalid = false,
+        bool extraDelimiter = false)
     {
         Kind = kind;
         Text = text;
@@ -44,6 +45,7 @@ internal readonly ref struct GedcomLine
         HasValue = hasValue;
         XrefMalformed = xrefMalformed;
         TagInvalid = tagInvalid;
+        ExtraDelimiter = extraDelimiter;
     }
 
     public GedcomLineKind Kind { get; }
@@ -66,9 +68,17 @@ internal readonly ref struct GedcomLine
     public bool XrefMalformed { get; }
 
     public bool TagInvalid { get; }
+
+    /// <summary>More than one space separated the level, xref or tag from the token after it.</summary>
+    public bool ExtraDelimiter { get; }
 }
 
-/// <summary>Splits a GEDCOM line into level, xref, tag and value with span operations only. Raises no diagnostics.</summary>
+/// <summary>
+/// Splits a GEDCOM line into level, xref, tag and value with span operations only. Raises no diagnostics. A run of
+/// spaces between level and xref, xref and tag, or level and tag counts as one delimiter (flagged as
+/// <see cref="GedcomLine.ExtraDelimiter"/>); the value starts after exactly one space following the tag, so its own
+/// leading spaces are kept.
+/// </summary>
 internal static class GedcomLineTokenizer
 {
     private const int MaxLevelDigits = 3;
@@ -110,7 +120,8 @@ internal static class GedcomLineTokenizer
             return new GedcomLine(GedcomLineKind.NoTag, text, hadLeading, level);
         }
 
-        var rest = text[(digits + 1)..];
+        var extraDelimiter = false;
+        var rest = SkipDelimiter(text[digits..], ref extraDelimiter);
         var xref = default(ReadOnlySpan<char>);
         var xrefMalformed = false;
         if (!rest.IsEmpty && rest[0] == '@')
@@ -120,17 +131,17 @@ internal static class GedcomLineTokenizer
             xrefMalformed = xref.Length < 3 || xref[^1] != '@' || xref[1..^1].Contains('@');
             if (end < 0)
             {
-                return new GedcomLine(GedcomLineKind.NoTag, text, hadLeading, level, xref, xrefMalformed: xrefMalformed);
+                return new GedcomLine(GedcomLineKind.NoTag, text, hadLeading, level, xref, xrefMalformed: xrefMalformed, extraDelimiter: extraDelimiter);
             }
 
-            rest = rest[(end + 1)..];
+            rest = SkipDelimiter(rest[end..], ref extraDelimiter);
         }
 
         var tagEnd = rest.IndexOf(' ');
         var tag = tagEnd < 0 ? rest : rest[..tagEnd];
         if (tag.IsEmpty)
         {
-            return new GedcomLine(GedcomLineKind.NoTag, text, hadLeading, level, xref, xrefMalformed: xrefMalformed);
+            return new GedcomLine(GedcomLineKind.NoTag, text, hadLeading, level, xref, xrefMalformed: xrefMalformed, extraDelimiter: extraDelimiter);
         }
 
         var tagInvalid = false;
@@ -154,6 +165,24 @@ internal static class GedcomLineTokenizer
             value,
             !value.IsEmpty,
             xrefMalformed,
-            tagInvalid);
+            tagInvalid,
+            extraDelimiter);
+    }
+
+    // Skips the run of spaces that starts span; sets extra when the run is longer than one space and a token follows.
+    private static ReadOnlySpan<char> SkipDelimiter(ReadOnlySpan<char> span, scoped ref bool extra)
+    {
+        var count = 0;
+        while (count < span.Length && span[count] == ' ')
+        {
+            count++;
+        }
+
+        if (count > 1 && count < span.Length)
+        {
+            extra = true;
+        }
+
+        return span[count..];
     }
 }

@@ -33,7 +33,7 @@ public class DiagnosticPrivacyTests
 
         // The test only proves something if every line-level code was actually raised.
         var missing = new List<string>();
-        for (var code = (int)GedcomDiagnosticCode.BlankLinesIgnored; code <= (int)GedcomDiagnosticCode.LineTooLong; code++)
+        for (var code = (int)GedcomDiagnosticCode.BlankLinesIgnored; code <= (int)GedcomDiagnosticCode.ExtraDelimiter; code++)
         {
             if (!seen.Contains((GedcomDiagnosticCode)code))
             {
@@ -55,7 +55,8 @@ public class DiagnosticPrivacyTests
     private static IEnumerable<string> Documents()
     {
         // 1001 blank, 1002 leading whitespace, 1003 level-less, 1005 missing tag, 1006 invalid tag,
-        // 1007 malformed xref, 1008 xref on substructure, 1009 level skipped, 1010 misplaced CONT, 1011 CONT after children.
+        // 1007 malformed xref, 1008 xref on substructure, 1009 level skipped, 1010 misplaced CONT, 1011 CONT after children,
+        // 1013 extra delimiter.
         yield return string.Join(
             "\n",
             "0 HEAD",
@@ -64,6 +65,7 @@ public class DiagnosticPrivacyTests
             "",
             "0 @I1@ INDI",
             "1 NAME " + Sentinel,
+            "1  NOTE  " + Sentinel,
             "  1 NOTE " + Sentinel,
             Sentinel,
             "1 " + Sentinel + " value",

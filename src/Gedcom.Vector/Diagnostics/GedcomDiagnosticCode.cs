@@ -39,6 +39,9 @@ public enum GedcomDiagnosticCode
     /// <summary>A line exceeded the maximum line length; the excess was discarded (Warning).</summary>
     LineTooLong = 1012,
 
+    /// <summary>More than one space separated the level, cross-reference identifier and tag of a line; the run was read as one delimiter (Info).</summary>
+    ExtraDelimiter = 1013,
+
     /// <summary>The document has no HEAD record (Warning).</summary>
     MissingHeader = 2001,
 

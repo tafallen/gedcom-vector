@@ -97,6 +97,23 @@ public class GedcomStructureTextTests
         }
     }
 
+    [Fact]
+    public void RoundTripsLinesWithRunsOfSpacesBeforeTheTag()
+    {
+        var records = Records("0 @I1@  INDI\n1  NAME John /Smith/\n");
+
+        var person = records[1];
+        Assert.Equal("INDI", person.Tag);
+        Assert.Equal("@I1@", person.Xref);
+        Assert.Equal("John /Smith/", Assert.Single(person.Children).Value);
+        AssertRoundTrips(person);
+
+        var parsed = GedcomStructure.ParseGedcomText("0 @I1@  INDI\n1  NAME John /Smith/\n");
+        Assert.Equal("INDI", parsed.Tag);
+        Assert.Equal("NAME", Assert.Single(parsed.Children).Tag);
+        Assert.Equal("0 @I1@ INDI\n1 NAME John /Smith/\n", parsed.ToGedcomText(GedcomSpecVersion.Gedcom70));
+    }
+
     [Theory]
     [InlineData("@@x")]
     [InlineData("@@I1@")]

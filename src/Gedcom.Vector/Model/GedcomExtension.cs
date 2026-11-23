@@ -7,5 +7,5 @@ public sealed class GedcomExtension
     public int? SourceOrder { get; set; }
 
     /// <summary>Gets or sets the substructure kept verbatim.</summary>
-    public GedcomStructure Structure { get; set; } = null!;
+    public required GedcomStructure Structure { get; set; }
 }

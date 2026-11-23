@@ -489,6 +489,7 @@ public class GedcomStructureReaderTests
         var result = Read("0 @N1@ NOTE " + new string('x', 40) + "\n1 CONT y\n", bufferSize: 16, maxLineLength: 32);
 
         var tooLong = result.Single(GedcomDiagnosticCode.LineTooLong);
+        Assert.Equal(GedcomDiagnosticSeverity.Error, tooLong.Severity);
         Assert.Equal(1, tooLong.Line);
         Assert.Equal("@N1@", tooLong.RecordXref);
         Assert.Equal("NOTE", tooLong.TagPath);

@@ -460,6 +460,10 @@ public class GedcomStructureTextTests
     [InlineData("NOTE", "")]
     [InlineData("NOTE", "@X 1@")]
     [InlineData("NOTE", "@X\n1@")]
+    [InlineData("NOTE", "I1@")]
+    [InlineData("NOTE", "I1")]
+    [InlineData("@X", null)]
+    [InlineData("@", null)]
     public void ToTextRejectsUnsafeTagsAndXrefs(string tag, string? xref)
     {
         var structure = new GedcomStructure { Tag = "INDI", Children = { new GedcomStructure { Tag = tag, Xref = xref, Value = "secret" } } };
@@ -468,6 +472,31 @@ public class GedcomStructureTextTests
 
         Assert.DoesNotContain("secret", exception.Message, StringComparison.Ordinal);
         Assert.Contains("INDI.", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ToTextExceptionNamesOnlyTheEmptyXrefCase()
+    {
+        var structure = new GedcomStructure { Tag = "NOTE", Xref = "" };
+
+        var exception = Assert.Throws<InvalidOperationException>(() => structure.ToGedcomText(GedcomSpecVersion.Gedcom70));
+
+        Assert.Contains("its xref is empty", exception.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("tag or xref is empty", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RoundTripsReaderProducedXrefsWithoutClosingAtAndTagsStartingWithAt()
+    {
+        var records = Records("0 @I1 INDI\n1 NAME a\n0 @I2@ @X v\n0 @ NOTE n\n0 @I@3@ FAM\n");
+
+        Assert.Contains(records, s => s.Xref == "@I1");
+        Assert.Contains(records, s => s.Xref == "@I2@" && s.Tag == "@X");
+        Assert.Contains(records, s => s.Xref == "@");
+        foreach (var record in records)
+        {
+            AssertRoundTrips(record);
+        }
     }
 
     [Fact]

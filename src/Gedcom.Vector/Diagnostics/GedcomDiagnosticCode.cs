@@ -36,7 +36,7 @@ public enum GedcomDiagnosticCode
     /// <summary>A CONC or CONT appeared after other child structures of its parent (Info).</summary>
     ContinuationAfterChildren = 1011,
 
-    /// <summary>A line exceeded the maximum line length; the excess was discarded (Warning).</summary>
+    /// <summary>A line exceeded the maximum line length; the excess was discarded, so data was lost (Error).</summary>
     LineTooLong = 1012,
 
     /// <summary>More than one space separated the level, cross-reference identifier and tag of a line; the run was read as one delimiter (Info).</summary>

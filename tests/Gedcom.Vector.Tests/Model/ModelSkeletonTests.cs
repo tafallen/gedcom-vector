@@ -9,7 +9,7 @@ public class ModelSkeletonTests
     [Fact]
     public void CollectionsStartEmpty()
     {
-        var record = new ExtensionRecord();
+        var record = new ExtensionRecord { Structure = new GedcomStructure { Tag = "_X" } };
         Assert.NotNull(record.Extensions);
         Assert.Empty(record.Extensions);
         Assert.NotNull(new GedcomStructure().Children);

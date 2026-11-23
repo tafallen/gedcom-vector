@@ -36,22 +36,34 @@ public sealed class GedcomStructure
     /// Writes this structure and its substructures as GEDCOM text, one line per structure, each ending with a line feed:
     /// <c>level [xref] tag [value]</c>. Every line feed inside a value becomes a <c>CONT</c> line directly after the
     /// structure's own line, and no <c>CONC</c> folding is done to limit line length (that is the writer's concern).
-    /// Values are escaped with the same rules the reader undoes. A structure with an empty <see cref="Tag"/> (a
-    /// placeholder for a malformed line) is written as <c>level [xref]</c> with no tag; its value, if any, follows as
-    /// <c>CONC</c>/<c>CONT</c> children. <see cref="ExtensionUri"/> and <see cref="SourceLine"/> are not written. A
-    /// <see cref="Value"/> of <c>""</c> is written like <see langword="null"/>; the reader never produces <c>""</c>.
+    /// Each line value (the first line and every <c>CONT</c> segment) is escaped on its own with the same rules the
+    /// reader undoes. A structure with an empty <see cref="Tag"/> (a placeholder for a malformed line) is written as
+    /// <c>level [xref]</c> with no tag; its value, if any, follows on <c>CONC</c> and <c>CONT</c> lines.
+    /// <see cref="ExtensionUri"/> and <see cref="SourceLine"/> are not written. A <see cref="Value"/> of <c>""</c> is
+    /// written like <see langword="null"/>; the reader never produces <c>""</c>.
     /// </summary>
     /// <param name="version">The GEDCOM version whose escaping rules apply.</param>
     /// <param name="baseLevel">The level of this structure's line, 0 to 99; substructures follow at deeper levels.</param>
     /// <returns>The GEDCOM text.</returns>
     /// <remarks>
+    /// <para>
     /// <c>\r\n</c>, a lone <c>\r</c> and <c>\n</c> in a value are all line breaks (as the reader treats them), so a
     /// value never injects a line, and it reads back with <c>\n</c>.
+    /// </para>
+    /// <para>
+    /// Round-trip contract: <see cref="ParseGedcomText(string, GedcomSpecVersion)"/> given this text and the same
+    /// <paramref name="version"/> returns a structure equal to this one in tags, xrefs, values, pointer flags and
+    /// children, except that <see cref="ExtensionUri"/> is not carried, <see cref="SourceLine"/> counts from 1 within
+    /// the text, <c>\r</c> in a value comes back as <c>\n</c>, and a <see cref="Value"/> of <c>""</c> comes back as
+    /// <see langword="null"/>.
+    /// </para>
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="baseLevel"/> is outside 0 to 99.</exception>
     /// <exception cref="InvalidOperationException">
-    /// A line would need a level above 999, or a <see cref="Tag"/> or <see cref="Xref"/> contains a space or a line
-    /// break, or an <see cref="Xref"/> is empty. The message names the tag path, never a value.
+    /// A line would need a level above 999; a <see cref="Tag"/> or <see cref="Xref"/> contains a space or a line
+    /// break; an <see cref="Xref"/> is empty or does not start with <c>@</c>; or a <see cref="Tag"/> starts with
+    /// <c>@</c> on a structure without an <see cref="Xref"/> (it would read back as an xref). The message names the tag
+    /// path, never a value.
     /// </exception>
     public string ToGedcomText(GedcomSpecVersion version, int baseLevel = 0)
     {
@@ -67,7 +79,7 @@ public sealed class GedcomStructure
             if (!structure.IsWritable(level))
             {
                 throw new InvalidOperationException(
-                    "The structure at " + FindPath(this, structure) + " cannot be written as GEDCOM text: its level is above 999, or its tag or xref is empty, or has a space or a line break.");
+                    "The structure at " + FindPath(this, structure) + " cannot be written as GEDCOM text: its level is above 999, its xref is empty or does not start with @, its tag starts with @ without an xref, or its tag or xref has a space or a line break.");
             }
 
             structure.AppendLines(builder, level, version);
@@ -81,8 +93,10 @@ public sealed class GedcomStructure
     }
 
     /// <summary>
-    /// Parses GEDCOM text holding exactly one top-level structure, using the GEDCOM 7.0 value rules. See
-    /// <see cref="ParseGedcomText(string, GedcomSpecVersion)"/>.
+    /// Parses GEDCOM text holding exactly one top-level structure, applying the GEDCOM 7.0 value rules. Text written
+    /// by <see cref="ToGedcomText"/> for another version must be parsed with
+    /// <see cref="ParseGedcomText(string, GedcomSpecVersion)"/> and that same version, or escapes such as a 5.5.1
+    /// <c>@#DJULIAN@</c> segment read back differently. See <see cref="ParseGedcomText(string, GedcomSpecVersion)"/>.
     /// </summary>
     /// <param name="text">The GEDCOM text.</param>
     /// <returns>The structure, with its substructures.</returns>
@@ -95,9 +109,11 @@ public sealed class GedcomStructure
     /// structure sits at the level of the first line, and deeper lines nest relative to it; the returned structure is a
     /// standalone root. <c>CONC</c> and <c>CONT</c> lines fold into values, a pointer value is flagged from its raw form
     /// and other values are unescaped for <paramref name="version"/> (the text is already Unicode, so no ANSEL
-    /// decoding happens). <see cref="SourceLine"/> counts from 1 within the text. Lenient input is accepted exactly as
-    /// the document reader accepts it (blank lines, leading whitespace, tagless placeholder lines, misplaced
-    /// continuations and similar), so everything the reader produces round-trips.
+    /// decoding happens). <see cref="SourceLine"/> counts from 1 within the text. Lenient input is accepted as the
+    /// document reader accepts it (blank lines, leading whitespace, extra spaces before the tag, tagless placeholder
+    /// lines, misplaced continuations and similar), except for the repairs that reshape or lose data, which throw
+    /// instead (see the exceptions). Pass the version given to <see cref="ToGedcomText"/>; the round-trip contract
+    /// is stated there.
     /// </summary>
     /// <param name="text">The GEDCOM text.</param>
     /// <param name="version">The GEDCOM version whose escaping rules apply.</param>
@@ -292,6 +308,13 @@ public sealed class GedcomStructure
     private bool IsWritable(int level)
     {
         if (level > MaxLevel || HasUnsafeCharacter(Tag) || (Xref is not null && (Xref.Length == 0 || HasUnsafeCharacter(Xref))))
+        {
+            return false;
+        }
+
+        // Shapes that would re-tokenize differently. The reader keeps a malformed xref token that lacks its closing
+        // "@" (for example "@I1"), and a tag starting with "@" after an xref ("0 @I1@ @X"), so both stay writable.
+        if ((Xref is not null && Xref[0] != '@') || (Xref is null && Tag.StartsWith('@')))
         {
             return false;
         }

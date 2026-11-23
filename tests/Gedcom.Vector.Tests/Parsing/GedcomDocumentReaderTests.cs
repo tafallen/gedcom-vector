@@ -97,6 +97,36 @@ public class GedcomDocumentReaderTests
     }
 
     [Fact]
+    public void DetectsTheHeaderAfterStrayTextBeforeIt()
+    {
+        var ansi70 = Read("stray text\n" + Head("7.0", "ANSI") + "1 SCHMA\n2 TAG _LOC https://example.org/_LOC\n0 _LOC x\n0 TRLR\n", Encoding.Latin1).Document;
+
+        Assert.Equal(GedcomSpecVersion.Gedcom70, ansi70.SourceVersion);
+        Assert.Equal(4, Single(ansi70, GedcomDiagnosticCode.NonUtf8Encoding).Line);
+        Assert.Equal(0, Count(ansi70, GedcomDiagnosticCode.MissingHeader));
+        Assert.Equal("https://example.org/_LOC", ansi70.ExtensionRecords[2].Structure.ExtensionUri);
+        var placeholder = ansi70.ExtensionRecords[0].Structure;
+        Assert.Equal("", placeholder.Tag);
+        Assert.Equal("stray text", placeholder.Value);
+
+        var utf551 = Read("  stray\nmore\n" + Head("5.5.1") + "0 TRLR\n").Document;
+
+        Assert.Equal(GedcomSpecVersion.Gedcom551, utf551.SourceVersion);
+        Assert.Equal(0, Count(utf551, GedcomDiagnosticCode.MissingHeader));
+        Assert.Equal(0, Count(utf551, GedcomDiagnosticCode.UnknownVersion));
+        Assert.Equal(["", "HEAD", "TRLR"], utf551.ExtensionRecords.ConvertAll(r => r.Structure.Tag));
+        Assert.Equal("  stray\nmore", utf551.ExtensionRecords[0].Structure.Value);
+        Assert.Equal(1, Count(utf551, GedcomDiagnosticCode.LineWithoutLevelUnplaced));
+    }
+
+    [Fact]
+    public void ReportsMissingHeaderWhenTheFirstTaggedRecordIsNotHead()
+    {
+        Single(Read("stray\n0 @I1@ INDI\n0 TRLR\n").Document, GedcomDiagnosticCode.MissingHeader);
+        Single(Read("stray\n").Document, GedcomDiagnosticCode.MissingHeader);
+    }
+
+    [Fact]
     public void DoesNotReportNonUtf8For551()
     {
         var document = Read(Head("5.5.1", "ANSI") + "0 TRLR\n", Encoding.Latin1).Document;

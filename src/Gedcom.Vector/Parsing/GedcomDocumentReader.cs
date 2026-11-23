@@ -13,7 +13,8 @@ internal sealed record GedcomReadResult(GedcomDocument Document, LineAccounting?
 /// Reads a whole GEDCOM stream into a <see cref="GedcomDocument"/>: detects the encoding and the version, decodes
 /// every value (ANSEL, then escapes, then pointer flags), keeps every level-0 record as an
 /// <see cref="ExtensionRecord"/> and, for GEDCOM 7.0, resolves <c>HEAD.SCHMA</c> extension URIs record by record as
-/// each is read, starting with HEAD itself (SCHMA is read only from a HEAD that is the first record).
+/// each is read, starting with HEAD itself. Version, encoding and SCHMA come from the first record with a tag, which
+/// must be HEAD; placeholder records for stray text before it are skipped for that purpose.
 /// </summary>
 internal static class GedcomDocumentReader
 {
@@ -40,6 +41,7 @@ internal static class GedcomDocumentReader
         Dictionary<string, string>? schema = null;
         var trailerSeen = false;
         var recordAfterTrailerReported = false;
+        var headerChecked = false;
 
         using (var lines = new GedcomLineReader(stream, encoding))
         {
@@ -47,13 +49,18 @@ internal static class GedcomDocumentReader
             while (reader.ReadRecord() is { } record)
             {
                 var index = document.ExtensionRecords.Count;
-                if (index == 0)
+
+                // The header is the first record with a tag: placeholder records made from stray text before it do
+                // not take its place. They are decoded with the default version, which decodes like any other.
+                var isHeaderSlot = !headerChecked && record.Tag.Length > 0;
+                if (isHeaderSlot)
                 {
+                    headerChecked = true;
                     version = DetectVersion(record, encoding, diagnostics);
                 }
 
                 DecodeValues(record, encoding.IsAnsel, version, work);
-                if (index == 0 && version == GedcomSpecVersion.Gedcom70 && record.Tag == "HEAD")
+                if (isHeaderSlot && version == GedcomSpecVersion.Gedcom70 && record.Tag == "HEAD")
                 {
                     schema = ReadSchema(record);
                 }
@@ -78,7 +85,7 @@ internal static class GedcomDocumentReader
             }
         }
 
-        if (document.ExtensionRecords.Count == 0)
+        if (!headerChecked)
         {
             diagnostics.Add(GedcomDiagnosticCode.MissingHeader);
         }

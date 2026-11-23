@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using BenchmarkDotNet.Attributes;
 using Gedcom.Vector;
+using Gedcom.Vector.Model;
+using Gedcom.Vector.Parsing;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -159,5 +161,12 @@ public class ParserBenchmarks
     public GedcomTreeContext CreateTreeContext()
     {
         return _parsedResult.ToContext();
+    }
+
+    [Benchmark]
+    public GedcomDocument MeasureReadingStructures()
+    {
+        using var stream = new MemoryStream(_gedcomBytes);
+        return GedcomDocumentReader.Read(stream).Document;
     }
 }

@@ -31,6 +31,11 @@
       "meanNs": 958610.45,
       "gateReferenceNs": 958610.45,
       "allocatedBytes": 1039830
+    },
+    "MeasureReadingStructures": {
+      "meanNs": 6611154.41,
+      "gateReferenceNs": 6611154.41,
+      "allocatedBytes": 8374390
     }
   }
 }

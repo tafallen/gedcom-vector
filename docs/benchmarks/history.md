@@ -37,3 +37,10 @@ One row per benchmark per checkpoint, appended by `tools/Run-Benchmarks.ps1`. Th
 | 2026-11-22 | 70917af | Plan 2 Task 4: shared line reader factory | QueryChildrenLinq | 7.482 us | 600 B | +0.2% |
 | 2026-11-22 | 70917af | Plan 2 Task 4: shared line reader factory | QueryChildrenFluent | 24.86 ns | 64 B | +9.9% |
 | 2026-11-22 | 70917af | Plan 2 Task 4: shared line reader factory | CreateTreeContext | 1.235 ms | 1,039,935 B | +28.8% |
+| 2026-11-23 | 2e42b15-dirty | Plan 2 Task 7: reading benchmark added | MeasureParsingGedcomVector | 3.122 ms | 2,681,463 B | -4.0% |
+| 2026-11-23 | 2e42b15-dirty | Plan 2 Task 7: reading benchmark added | MeasureExporting | 1.558 ms | 4,792,939 B | +1.2% |
+| 2026-11-23 | 2e42b15-dirty | Plan 2 Task 7: reading benchmark added | MeasureExportingContext | 1.495 ms | 4,792,984 B | +1.9% |
+| 2026-11-23 | 2e42b15-dirty | Plan 2 Task 7: reading benchmark added | QueryChildrenLinq | 7.380 us | 600 B | -1.2% |
+| 2026-11-23 | 2e42b15-dirty | Plan 2 Task 7: reading benchmark added | QueryChildrenFluent | 22.22 ns | 64 B | -1.8% |
+| 2026-11-23 | 2e42b15-dirty | Plan 2 Task 7: reading benchmark added | CreateTreeContext | 1.227 ms | 1,039,844 B | +28.0% |
+| 2026-11-23 | 2e42b15-dirty | Plan 2 Task 7: reading benchmark added | MeasureReadingStructures | 6.611 ms | 8,374,390 B | no gate reference |

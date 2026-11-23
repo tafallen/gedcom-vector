@@ -19,7 +19,7 @@
 - New public model types: `namespace Gedcom.Vector.Model`, `public sealed class` (or `abstract` for bases), settable properties, `List<T>` collections initialised empty, XML docs on every public member naming the GEDCOM tag where there is one.
 - Diagnostics never contain payload values: messages may name tags, xrefs, line numbers and counts only (spec section 7: "never values").
 - Do not change 1.3.2 behaviour: `GedcomImportAdapter`, `StreamingGedcomParser`, `GedcomExportWriter` and the existing tests keep passing unchanged, except the shared reader factory extraction in Task 4.
-- The private file `C:\Users\tim\Downloads\Methven Ancestry.ged` is used only through the `GEDCOM_VECTOR_PRIVATE_CORPUS` environment variable (a directory), only locally, never copied, never printed; test failures report xrefs, tag paths and line numbers, never values.
+- The private file `C:\Users\tim\Downloads\Methven Ancestry.ged` is used only through the `GEDCOM_VECTOR_PRIVATE_CORPUS` environment variable (a list of file paths since the Plan 2 final fix wave; originally a directory), only locally, never copied, never printed; test failures report xrefs, tag paths and line numbers, never values.
 - No em-dashes in any file, comment, commit message or doc.
 - Commits use conventional prefixes (`feat:`, `fix:`, `test:`, `build:`, `ci:`, `docs:`, `chore:`) and end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 - Tests pass and the build is warning-free before every commit. Every regression found gets a test. Test names are PascalCase without underscores (CA1707).

@@ -284,7 +284,7 @@ Option `DowngradeStrategy`: `ReportAndDrop` (default, clean standard output) or 
 
 **Private corpus:** `Methven Ancestry.ged` (Ancestry.com export, 128,475 lines, 4,338 individuals, heavy `_APID`/`_OID` extensions and citations; real PII).
 
-- Never in the repo: located by environment variable `GEDCOM_VECTOR_PRIVATE_CORPUS` (a directory). `.gitignore` adds `tests/corpus/private/`, `*.private.ged`, and a guard test fails the build if any file under `tests/corpus/` is not listed in the public manifest.
+- Never in the repo: located by environment variable `GEDCOM_VECTOR_PRIVATE_CORPUS`, a list of explicit file paths separated by the platform path separator (never a directory, so no other file is read by accident; Plan 2 ruling after a run read a second private file); a set but invalid entry fails the test, and failure output identifies files by index, never by name. `.gitignore` adds `tests/corpus/private/`, `*.private.ged`, and a guard test fails the build if any file under `tests/corpus/` is not listed in the public manifest.
 - Tests run locally only, as `[SkippableFact]`, skipped (visibly) when the variable is unset, so CI never sees it.
 - Test failures report record xrefs, tag paths and line numbers, never values. The diff helper is built that way for every corpus file, so the rule cannot be forgotten per test.
 

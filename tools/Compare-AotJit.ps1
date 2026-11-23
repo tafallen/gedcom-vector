@@ -10,7 +10,8 @@ binaries over every selected file in each corpus directory for each export targe
 pipeline (--structures) over every .ged file, plus three failure-path checks (a missing input must exit 3, a .txt
 input must exit 4, a .gdz input in --structures mode must exit 4). For every run the exit code, the stdout
 summary and the bytes of the output file (compared by SHA-256) must be identical between the two binaries. A corpus
-file must also exit 0. One line per comparison is printed (file name, target, match or DIFF); file contents are never
+file must also exit 0, and a --structures run must print RoundTrip=ok (every record's text re-parses to the same
+structure). One line per comparison is printed (file name, target, match or DIFF); file contents are never
 printed. stderr must also be identical. The script exits 0 only if everything matches and the AOT publish logged no IL warnings.
 
 .PARAMETER Rid
@@ -176,6 +177,11 @@ foreach ($run in $runs) {
     if ($a.Stdout -cne $j.Stdout) { $problems.Add('stdout differs') }
     if ($a.Stderr -cne $j.Stderr) { $problems.Add('stderr differs') }
     if ($a.Hash -ne $j.Hash) { $problems.Add('output bytes differ') }
+    if ($run.Structures -and $run.Expected -eq 0) {
+        foreach ($result in @($a, $j)) {
+            if ($result.Stdout -notmatch '(?m)^RoundTrip=ok$') { $problems.Add('structure text did not round-trip') ; break }
+        }
+    }
 
     if ($problems.Count -eq 0) {
         Write-Host ("{0,-28} {1,-10} match (exit {2})" -f $run.Name, $targetLabel, $a.Exit)

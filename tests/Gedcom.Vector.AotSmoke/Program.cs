@@ -138,11 +138,14 @@ static async Task<int> RunStructuresAsync(string input, string output)
     }
 
     var text = new StringBuilder();
+    var recordTexts = new List<string>(document.ExtensionRecords.Count);
     long structures = 0;
     var pending = new Stack<GedcomStructure>();
     foreach (var record in document.ExtensionRecords)
     {
-        text.Append(record.Structure.ToGedcomText(document.SourceVersion));
+        var recordText = record.Structure.ToGedcomText(document.SourceVersion);
+        recordTexts.Add(recordText);
+        text.Append(recordText);
         pending.Push(record.Structure);
         while (pending.Count > 0)
         {
@@ -165,6 +168,27 @@ static async Task<int> RunStructuresAsync(string input, string output)
         return ExitUsage;
     }
 
+    // Re-parse each record's text; only the first failing record index is printed, never a value.
+    string roundTrip = "ok";
+    for (int i = 0; i < recordTexts.Count; i++)
+    {
+        bool same;
+        try
+        {
+            same = SameStructure(document.ExtensionRecords[i].Structure, GedcomStructure.ParseGedcomText(recordTexts[i], document.SourceVersion));
+        }
+        catch (FormatException)
+        {
+            same = false;
+        }
+
+        if (!same)
+        {
+            roundTrip = "failed " + i.ToString(CultureInfo.InvariantCulture);
+            break;
+        }
+    }
+
     var summary = new StringBuilder();
     AppendLine(summary, "SourceVersion", document.SourceVersion.ToString());
     AppendLine(summary, "Records", document.ExtensionRecords.Count.ToString(CultureInfo.InvariantCulture));
@@ -176,10 +200,35 @@ static async Task<int> RunStructuresAsync(string input, string output)
         AppendLine(summary, "Diagnostic", "GV" + ((int)diagnostic.Code).ToString(CultureInfo.InvariantCulture) + " " + line);
     }
 
+    AppendLine(summary, "RoundTrip", roundTrip);
+
     using var stdout = Console.OpenStandardOutput();
     byte[] bytes = new UTF8Encoding(false).GetBytes(summary.ToString());
     stdout.Write(bytes, 0, bytes.Length);
     return 0;
+}
+
+// The ToGedcomText round-trip contract: tags, xrefs, values, pointer flags and children match (ExtensionUri and
+// SourceLine are outside it).
+static bool SameStructure(GedcomStructure expected, GedcomStructure actual)
+{
+    var pairs = new Stack<(GedcomStructure Expected, GedcomStructure Actual)>();
+    pairs.Push((expected, actual));
+    while (pairs.Count > 0)
+    {
+        var (e, a) = pairs.Pop();
+        if (e.Tag != a.Tag || e.Xref != a.Xref || e.Value != a.Value || e.ValueIsPointer != a.ValueIsPointer || e.Children.Count != a.Children.Count)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < e.Children.Count; i++)
+        {
+            pairs.Push((e.Children[i], a.Children[i]));
+        }
+    }
+
+    return true;
 }
 
 static int Usage()

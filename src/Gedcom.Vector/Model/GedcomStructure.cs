@@ -50,7 +50,7 @@ public sealed class GedcomStructure
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="baseLevel"/> is outside 0 to 99.</exception>
     /// <exception cref="InvalidOperationException">
-    /// A line would need a level above 999, or a <see cref="Tag"/> or <see cref="Xref"/> contains whitespace or a line
+    /// A line would need a level above 999, or a <see cref="Tag"/> or <see cref="Xref"/> contains a space or a line
     /// break, or an <see cref="Xref"/> is empty. The message names the tag path, never a value.
     /// </exception>
     public string ToGedcomText(GedcomSpecVersion version, int baseLevel = 0)
@@ -67,7 +67,7 @@ public sealed class GedcomStructure
             if (!structure.IsWritable(level))
             {
                 throw new InvalidOperationException(
-                    "The structure at " + FindPath(this, structure) + " cannot be written as GEDCOM text: its level is above 999, or its tag or xref is empty, or has whitespace or a line break.");
+                    "The structure at " + FindPath(this, structure) + " cannot be written as GEDCOM text: its level is above 999, or its tag or xref is empty, or has a space or a line break.");
             }
 
             structure.AppendLines(builder, level, version);
@@ -297,7 +297,7 @@ public sealed class GedcomStructure
     {
         foreach (var c in text)
         {
-            if (char.IsWhiteSpace(c))
+            if (c is ' ' or '\r' or '\n')
             {
                 return true;
             }

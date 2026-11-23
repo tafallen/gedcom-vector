@@ -377,7 +377,6 @@ public class GedcomStructureTextTests
     [InlineData("A B", null)]
     [InlineData("A\nB", null)]
     [InlineData("A\rB", null)]
-    [InlineData("A\tB", null)]
     [InlineData("NOTE", "")]
     [InlineData("NOTE", "@X 1@")]
     [InlineData("NOTE", "@X\n1@")]
@@ -389,6 +388,20 @@ public class GedcomStructureTextTests
 
         Assert.DoesNotContain("secret", exception.Message, StringComparison.Ordinal);
         Assert.Contains("INDI.", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RoundTripsTagsAndXrefsWithTabsOrNbsp()
+    {
+        var records = Records("0 A\tB x\n1 _X Y v\n0 @a\tb@ NOTE v\n");
+
+        Assert.Contains(records.SelectMany(Flatten), s => s.Tag == "A\tB");
+        Assert.Contains(records.SelectMany(Flatten), s => s.Tag == "_X Y");
+        Assert.Contains(records, s => s.Xref == "@a\tb@");
+        foreach (var record in records)
+        {
+            AssertRoundTrips(record);
+        }
     }
 
     [Fact]

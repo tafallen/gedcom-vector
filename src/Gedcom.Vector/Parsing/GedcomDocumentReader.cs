@@ -12,7 +12,8 @@ internal sealed record GedcomReadResult(GedcomDocument Document, LineAccounting?
 /// <summary>
 /// Reads a whole GEDCOM stream into a <see cref="GedcomDocument"/>: detects the encoding and the version, decodes
 /// every value (ANSEL, then escapes, then pointer flags), keeps every level-0 record as an
-/// <see cref="ExtensionRecord"/> and, for GEDCOM 7.0, resolves <c>HEAD.SCHMA</c> extension URIs.
+/// <see cref="ExtensionRecord"/> and, for GEDCOM 7.0, resolves <c>HEAD.SCHMA</c> extension URIs record by record as
+/// each is read, starting with HEAD itself (SCHMA is read only from a HEAD that is the first record).
 /// </summary>
 internal static class GedcomDocumentReader
 {
@@ -57,6 +58,11 @@ internal static class GedcomDocumentReader
                     schema = ReadSchema(record);
                 }
 
+                if (schema is { Count: > 0 })
+                {
+                    ApplySchema(record, schema, work);
+                }
+
                 if (trailerSeen && !recordAfterTrailerReported)
                 {
                     diagnostics.Add(GedcomDiagnosticCode.RecordAfterTrailer, record.SourceLine, DiagnosticArguments.SafeXref(record.Xref));
@@ -80,11 +86,6 @@ internal static class GedcomDocumentReader
         if (!trailerSeen)
         {
             diagnostics.Add(GedcomDiagnosticCode.MissingTrailer);
-        }
-
-        if (schema is { Count: > 0 })
-        {
-            ApplySchema(document, schema, work);
         }
 
         document.SourceVersion = version;
@@ -205,14 +206,11 @@ internal static class GedcomDocumentReader
         return schema;
     }
 
-    private static void ApplySchema(GedcomDocument document, Dictionary<string, string> schema, List<GedcomStructure> work)
+    // Applied to each record as it is completed (HEAD included, once its SCHMA is read), so no second pass is needed.
+    private static void ApplySchema(GedcomStructure record, Dictionary<string, string> schema, List<GedcomStructure> work)
     {
         work.Clear();
-        foreach (var record in document.ExtensionRecords)
-        {
-            work.Add(record.Structure);
-        }
-
+        work.Add(record);
         while (work.Count > 0)
         {
             var structure = work[^1];

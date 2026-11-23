@@ -139,10 +139,11 @@ public class GedcomDocumentReaderTests
     public void ResolvesSchmaExtensionUris()
     {
         var text = "0 HEAD\n1 GEDC\n2 VERS 7.0\n1 SCHMA\n2 TAG _LOC https://example.org/_LOC\n2 TAG _NOSPACE\n"
-            + "2 TAG NOPE https://example.org/NOPE\n0 @L1@ _LOC\n1 _LOC nested\n1 _OTHER y\n1 NOTE z\n0 TRLR\n";
+            + "2 TAG NOPE https://example.org/NOPE\n1 _LOC in head\n0 @L1@ _LOC\n1 _LOC nested\n1 _OTHER y\n1 NOTE z\n0 TRLR\n";
 
         var document = Read(text).Document;
 
+        Assert.Equal("https://example.org/_LOC", Child(document.ExtensionRecords[0].Structure, "_LOC").ExtensionUri);
         var location = document.ExtensionRecords[1].Structure;
         Assert.Equal("https://example.org/_LOC", location.ExtensionUri);
         Assert.Equal("https://example.org/_LOC", Child(location, "_LOC").ExtensionUri);
